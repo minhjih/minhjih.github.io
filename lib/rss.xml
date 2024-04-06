@@ -1,4 +1,153 @@
-<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[minji]]></title><description><![CDATA[Obsidian digital garden]]></description><link>http://github.com/dylang/node-rss</link><image><url>lib\media\favicon.png</url><title>minji</title><link></link></image><generator>Webpage HTML Export plugin for Obsidian</generator><lastBuildDate>Sat, 06 Apr 2024 07:47:50 GMT</lastBuildDate><atom:link href="lib\rss.xml" rel="self" type="application/rss+xml"/><pubDate>Sat, 06 Apr 2024 07:47:46 GMT</pubDate><ttl>60</ttl><dc:creator></dc:creator><item><title><![CDATA[중간고사 기출]]></title><description><![CDATA[ 
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[minji]]></title><description><![CDATA[Obsidian digital garden]]></description><link>http://github.com/dylang/node-rss</link><image><url>lib\media\favicon.png</url><title>minji</title><link/></image><generator>Webpage HTML Export plugin for Obsidian</generator><lastBuildDate>Sat, 06 Apr 2024 15:28:44 GMT</lastBuildDate><atom:link href="lib\rss.xml" rel="self" type="application/rss+xml"/><pubDate>Sat, 06 Apr 2024 15:28:42 GMT</pubDate><ttl>60</ttl><dc:creator/><item><title><![CDATA[Curiosity]]></title><description><![CDATA[ 
+ <br>
+<br><a data-tooltip-position="top" aria-label="L2. Recall C (Part 1) > Various Data Types" data-href="L2. Recall C (Part 1)#Various Data Types" href="micro-processor\l2.-recall-c-(part-1).html#Various_Data_Types" class="internal-link" target="_self" rel="noopener">int type과 long type의 사이즈</a>
+<br><a data-tooltip-position="top" aria-label="L5. Recall C (Part 4) > Dynamic Array Based Implementation" data-href="L5. Recall C (Part 4)#Dynamic Array Based Implementation" href="micro-processor\l5.-recall-c-(part-4).html#Dynamic_Array_Based_Implementation" class="internal-link" target="_self" rel="noopener">Dynamic array의 연산량을 줄이는 방법, 평균적으로 O(1)인 이유</a>
+<br><a data-tooltip-position="top" aria-label="L6. Recall C (Part 5) > ^75b155" data-href="L6. Recall C (Part 5)#^75b155" href="micro-processor\l6.-recall-c-(part-5).html#^75b155" class="internal-link" target="_self" rel="noopener">Worst case Space Complexity</a>
+<br><a data-tooltip-position="top" aria-label="L6. Recall C (Part 5) > Quick Sort" data-href="L6. Recall C (Part 5)#Quick Sort" href="micro-processor\l6.-recall-c-(part-5).html#Quick_Sort" class="internal-link" target="_self" rel="noopener">Worst case space complexity는 어떻게 optimize가 가능할까?</a>
+<br>
+]]></description><link>micro-processor\curiosity.html</link><guid isPermaLink="false">Micro processor/Curiosity.md</guid><pubDate>Sat, 06 Apr 2024 13:28:24 GMT</pubDate></item><item><title><![CDATA[L6. Recall C (Part 5)]]></title><description><![CDATA[ 
+ <br><br>
+Classification
+<br>
+<br>얼마만큼 비교하는가?
+<br>교환 횟수
+<br>메모리를 얼마만큼 사용하는가?
+<br>Recursion이 존재하는가?
+<br>Stable한 방법인가?-&gt; stable은 정렬 후 키가 같은 원소들의 순서가 바뀌지 않는 것을 의미
+<br>Adaptability? 적응하는 과정
+<br><br><br>Basic Version에서는 무조건 n^2번 돌아야한다. <br>for(int i = n-1; i &gt;= 1; i--){
+	for(int j = 0; j &lt;= i - 1; j--){
+		if(is_swap()?) swap;
+	}
+}
+복사<br><br>교환이 더 이상 이뤄지지 않을 때에는 끝내 버린다. Flag가 있음<br>
+Improved Version의 경우 한번에 반복문을 나올 수도 있기 때문에,  Complexity가 best case <br>
+Performance
+<br><br><br>선택정렬: key의 우선순위가 있는 것과 제일 앞에 있는 것을 교체한다. 하나하나 비교를 해봐야 하므로, worst case와 best case모두 .<br>
+Performance
+<br><br><br>삽입 정렬은 한 칸씩 범위를 확장해 가면서 중간중간에 순서에 맞게 집어넣는 것을 말한다.<br>
+<img alt="Pasted image 20240406162937.png" src="lib\media\pasted-image-20240406162937.png"><br>
+위의 것 처럼 정렬하는 것을 삽입정렬이라고 하는데, Best case에는 가장 앞에 배치하면 되기 때문에 의 시간 복잡도를 가진다.<br><br><br>Shell sort는 n칸 씩 건너뛰면서 Sorting하고, Adaptive하게 점점 n을 줄이면서 sorting한다. <br>
+Properties
+<br>
+<br>gap sequence 에 따라 향상시킬 수 있는데 어떤 gap sequence를 써야하는지는 아직 정확하진 않음
+<br>Adaptive한 방식이라서, 언제 끝날지는 모름.-&gt; 더 빨리 끝날 수 있다는 기대가 있음.
+<br>Unstable함
+<br><img alt="algorithm Tutorial => Shell Sort Basic Information" src="https://i.stack.imgur.com/WTd9p.jpg" referrerpolicy="no-referrer"><br>void ShellSort(int a[], int n) {
+	int i, j, tmp, t;
+	for (t = n / 2; t &gt;= 1; t /= 2) { //gap이 t로 정의됨
+	//내부 sorting과정 어디는 selection sort, bubble sort인데 여긴 약간 삽입 정렬 느낌
+	//상관 없는듯
+		for (i = t; i &lt; n; i++) {// t부터 시작해서 점점 증가해나감
+			for (j = i - t; j &gt;= 0; j-=t) { //gap이전것들과 하나씩 비교
+			
+			    if(a[j+t] &gt; a[j]){// 자리 선점 되면 이제 멈춰
+			        break;
+			    }else{// 아직 새로 들어온것의 자리가 불안전 자리 바꿔줘야 함.
+			        tmp = a[j];
+			        a[j] = a[j+t];
+			        a[j+t] = tmp;
+			    }
+			}
+		}
+	}
+}
+복사<br><br><br>Devide and conquer와 굉장히 유사하다. <br>
+Procedure
+<br>
+<br>Divide th array into two parts
+<br>Divide the array into two parts again
+<br>break into single parts
+<br>sort하면서 array합침.
+<br>divided arrays합친다.
+<br>Merge sort는 반복적인  작업들은 Recursion으로 만들어서 재귀 함수로 만들 수 있다.<br>def MergeSort(arr[], l, r) // target element l~ r까지 중에서
+
+If r &gt; l
+	//1. Find Middle point
+	middle m = (l+r)/2;
+	//2. Call MergeSort
+	Call mergeSort(arr, l, m);
+	Call mergeSort(arr, m, r);
+	//3. 서로 각자 merge sorted된 어레이를 merge하며 sort한다.
+	Call merge(arr, l, m, r);
+	
+복사<br>l~m까지 m~r까지는 정렬이 되어있으니,  Merge과정에서 k++해 가면서(arr[k]), l~m에서 가져올지, m~r에서 가져올지 결정하면 된다<br><br><br>하나를 기준으로 하여 양쪽으로 작은 것 큰 것이 나뉜다. 그리고 다시 합쳐진다.<br><img alt="Pasted image 20240406214214.png" src="lib\media\pasted-image-20240406214214.png"><br>
+위와 같은 경우가 Quick sort<br>
+Best Performance
+<br>양 갈래로 정확하게 반반으로 계속 나뉜다면,<br>
+시행 횟수 에 대해<br>
+마찬가지로<br>
+<br>
+Worst Performance
+<br>만약에 운이 너무 없어서 Pivot을 정했는데 한쪽으로 모든 데이터가 쏠리는 상황이 반복되면..<br>
+<br><br>Worst case space complexity는 어떻게 optimize가 가능할까?<br><br>]]></description><link>micro-processor\l6.-recall-c-(part-5).html</link><guid isPermaLink="false">Micro processor/L6. Recall C (Part 5).md</guid><pubDate>Sat, 06 Apr 2024 13:28:38 GMT</pubDate><enclosure url="lib\media\pasted-image-20240406162937.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src="lib\media\pasted-image-20240406162937.png"&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[L7. Introduction to microprocessor]]></title><description><![CDATA[ 
+ <br>control system with Electronics = Micro-processor<br><br>
+Terminologies
+<br>
+<br>Integrated Chip (IC)<br>
+단일 실리콘 조각에 제작된 전자회로 요소들; 매우 작고, 대량 생산과 비용 절감이 가능하다.
+<br>Micro-Controller Unit(MCU)<br>
+CPU와 Peripheral, 추가적인 회로와 메모리를 포함하는 IC.
+<br>Central Processing Unit (CPU)<br>
+프로그램의 instruction을 시행할 수 있는 하드웨어 회로
+<br>Instruction<br>
+Processor를 실행시키기 위한 명령; Operation과 Operand(없기도 함)로 구성되어있음
+<br>Ex. MCU로 Hot plate 기능 구현을 한다고 하자<br>
+<br>on/off signal로 간단한 키고 끄기 가능
+<br>MCU의 Peripheral인 Sensor가 MCU로 전달하여 적절한 온도 조절 신호를 보낸다.  이 과정에서 Driver에서 신호를 분석하여 조절할 수 있다.
+<br><br>
+Terminologies
+<br>
+<br>Peripheral<br>
+특별한 기능을 제공하거나 inerfacing하여 CPU를 돕는 hardware; 주변 기기
+<br>analog<br>
+무한한 값들을 가질 수 있는 것
+<br>digital<br>
+한정된 수의 값을 가질 수 있는 것
+<br>Analog to Digital Converter<br>
+Analog value를 상응하는 Digital value로 바꿔주는 회로를 말한다.
+<br>Digital to Analog Converter<br>
+Digital value를 상응하는 analog value로 바꿔주는 회로를 말한다.
+<br><br>
+동시성
+<br>보통 MCU는 여러가지 작업을 동시에 수행한다.<br>
+이런 여러가지 작업을 더하는 것들은 소프트웨어의 복잡성을 증가시킨다.<br>
+ex). 메모리 사용량이나, power<br>MCU는 다른 파트의 software를 CPU를 공유하며 사용한다. (interrupt handler와 작업, Thread와 process 등등)<br>
+어떤 프로세스는 Peripheral에서 처리가 가능하다.<br>Scheduler<br>
+<br>Operating system을 활용하는 필수적인 유닛이다.
+<br>Processor에 다음에 처리해야 할 소프트웨어 조각을 결정해준다.
+<br>Performance가 높을 수록 가격 비쌈
+<br><br>
+Responsiveness(응답성)
+<br>주어진 시간 내에 할당된 작업을 완료하는 시스템 또는 기능적 단위<br>
+Responsiveness를 높이기 위해서<br>
+<br>Raw processing Speed<br>
+Code를 Optimize하고, 빠른 CPU를 사용한다.
+<br>Task Scheduling<br>
+중요한 작업에서는 focus하는 것이 중요하다.
+<br>Multicore processing
+<br>Multiple processors
+<br><br>당연하게도, 사용자는 프로그램이 도중에 끊기는 것을 예상하지 못한다.<br>
+현재에 Failure가 있어도 그 영향을 최소화 시켜줘야한다.<br>Failure를 Detect할 때에는 run time이나 과거를 분석할 때에 센서를 사용.<br>
+Unexpected cases에 대한 software routine이 이미 정해져 있음.<br>
+-&gt;Diagnostic을 통해 fault가 어디서 발생했는지 알 수 있는 것<br><br>Arm Cortex-M0+를 수업 시간에 사용한다.<br>
+Memory와 소통을 통해  instruction과 data를 얻어낸다<br>
+Feature
+<br>
+<br>Memory 접근할 때에, CPU는 AHB-Lite interface로 소통하는데, memory는 바깥에 배치해 있는 경우도 있다.(이 경우에는 바깥에 있음)
+<br>Interrupt handler는 CPU에 명령이 들어가는 것보다 먼저 처리 해야함. 따라서 Processor core에 붙어있는 Nested Vecotred Interrupt Controller를 사용하여 Interrupt할 수 있도록 한다. 
+<br><br><img alt="Pasted image 20240406231120.png" src="lib\media\pasted-image-20240406231120.png"><br>
+High speed Bus에는 일단 CPU, Memory, GPIO(HMI), System; 가장 접근성이 높은 것이 연결되어있다.<br>
+Peripheral Bus에는 주변 기기들..<br>
+헷갈릴 수 있는 것은 Clock이 Peripheral이라는 것이다.]]></description><link>micro-processor\l7.-introduction-to-microprocessor.html</link><guid isPermaLink="false">Micro processor/L7. Introduction to microprocessor.md</guid><pubDate>Sat, 06 Apr 2024 14:19:21 GMT</pubDate><enclosure url="lib\media\pasted-image-20240406231120.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src="lib\media\pasted-image-20240406231120.png"&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[L8. ARM Cortex-M0(+) Core (Part 1)]]></title><description><![CDATA[ 
+ <br><img alt="Pasted image 20240406231120.png" src="lib\media\pasted-image-20240406231120.png"><br><br><br>
+instruction
+<br>Processor를 실행시키는 명령어, Operator와 Operand로 이뤄져 있다. (Operand는 없을 수도)<br>
+Operation
+<br>instruction의 부분으로 어떤 작업을 할 것인지 특정 해준다.<br>
+Operand
+<br>instruction의 부분으로 Operation에 의해 사용되는 Parameter다.<br><br><img alt="Pasted image 20240406233648.png" src="lib\media\pasted-image-20240406233648.png">]]></description><link>micro-processor\l8.-arm-cortex-m0(+)-core-(part-1).html</link><guid isPermaLink="false">Micro processor/L8. ARM Cortex-M0(+) Core (Part 1).md</guid><pubDate>Sat, 06 Apr 2024 15:20:29 GMT</pubDate><enclosure url="lib\media\pasted-image-20240406231120.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src="lib\media\pasted-image-20240406231120.png"&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[L9. ARM Cortex-M0(+) Core (Part 2)]]></title><description><![CDATA[ 
+ ]]></description><link>micro-processor\l9.-arm-cortex-m0(+)-core-(part-2).html</link><guid isPermaLink="false">Micro processor/L9. ARM Cortex-M0(+) Core (Part 2).md</guid><pubDate>Sat, 06 Apr 2024 14:16:05 GMT</pubDate></item><item><title><![CDATA[중간고사 기출]]></title><description><![CDATA[ 
  <br>2021<br>
 <br><a data-tooltip-position="top" aria-label="L2. Recall C (Part 1) > Call by Value &amp; Call by Reference" data-href="L2. Recall C (Part 1)#Call by Value &amp; Call by Reference" href="micro-processor\l2.-recall-c-(part-1).html#Call_by_Value_&amp;_Call_by_Reference" class="internal-link" target="_self" rel="noopener">Difference of Call by value and Call by reference</a>
 <br><a data-tooltip-position="top" aria-label="L3. Recall C (Part 2) > Function &amp; Void Pointer" data-href="L3. Recall C (Part 2)#Function &amp; Void Pointer" href="micro-processor\l3.-recall-c-(part-2).html#Function_&amp;_Void_Pointer" class="internal-link" target="_self" rel="noopener">Meaning of void pointer on int example</a>.
@@ -30,12 +179,7 @@
 <br>IEEE Std 754에 의하면 어떻게 Floating point number를 정의하는가?
 <br>ARM cortex M0+ architecture에서 overhead를 어떻게 표현하는가?
 <br>4-digit binary number의 floating-point addition 과정을 서술하라.
-]]></description><link>micro-processor\중간고사-기출.html</link><guid isPermaLink="false">Micro processor/중간고사 기출.md</guid><pubDate>Fri, 05 Apr 2024 17:44:53 GMT</pubDate></item><item><title><![CDATA[Curiosity]]></title><description><![CDATA[ 
- <br>
-<br><a data-tooltip-position="top" aria-label="L2. Recall C (Part 1) > Various Data Types" data-href="L2. Recall C (Part 1)#Various Data Types" href="micro-processor\l2.-recall-c-(part-1).html#Various_Data_Types" class="internal-link" target="_self" rel="noopener">int type과 long type의 사이즈</a>
-<br><a data-tooltip-position="top" aria-label="L5. Recall C (Part 4) > Dynamic Array Based Implementation" data-href="L5. Recall C (Part 4)#Dynamic Array Based Implementation" href="micro-processor\l5.-recall-c-(part-4).html#Dynamic_Array_Based_Implementation" class="internal-link" target="_self" rel="noopener">Dynamic array의 연산량을 줄이는 방법, 평균적으로 O(1)인 이유</a>
-<br><a data-tooltip-position="top" aria-label="L6. Recall C (Part 5) > ^75b155" data-href="L6. Recall C (Part 5)#^75b155" href="micro-processor\l6.-recall-c-(part-5).html#^75b155" class="internal-link" target="_self" rel="noopener">Worst case Space Complexity</a>
-]]></description><link>micro-processor\curiosity.html</link><guid isPermaLink="false">Micro processor/Curiosity.md</guid><pubDate>Sat, 06 Apr 2024 06:38:50 GMT</pubDate></item><item><title><![CDATA[L2. Recall C (Part 1)]]></title><description><![CDATA[ 
+]]></description><link>micro-processor\중간고사-기출.html</link><guid isPermaLink="false">Micro processor/중간고사 기출.md</guid><pubDate>Fri, 05 Apr 2024 17:44:53 GMT</pubDate></item><item><title><![CDATA[L2. Recall C (Part 1)]]></title><description><![CDATA[ 
  <br><br><br>printf: 결과 출력 함수.<br>int main(void){
 	printf("hello,world");
 }
@@ -583,26 +727,4 @@ GetMinimum()/GetMaximum()
 <br>가장 작은/ 가장 큰 key의 요소를 반환한다. with out deleting<br>
 Auxiliary
 <br>k-th smallest/largest : k-th 작은/ 큰 원소를 반환한다.<br>
-Size: priority queue의 element 개수를 출력한다.]]></description><link>micro-processor\l5.-recall-c-(part-4).html</link><guid isPermaLink="false">Micro processor/L5. Recall C (Part 4).md</guid><pubDate>Fri, 05 Apr 2024 17:34:59 GMT</pubDate><enclosure url="lib\media\pasted-image-20240406020645.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;lib\media\pasted-image-20240406020645.png&quot;&gt;&lt;/figure&gt;</content:encoded></item><item><title><![CDATA[L6. Recall C (Part 5)]]></title><description><![CDATA[ 
- <br><br>
-Classification
-<br>
-<br>얼마만큼 비교하는가?
-<br>교환 횟수
-<br>메모리를 얼마만큼 사용하는가?
-<br>Recursion이 존재하는가?
-<br>안정한 방법인가?
-<br>Adaptability? 적응하는 과정
-<br><br><br>Basic Version에서는 무조건 n^2번 돌아야한다. <br>for(int i = n-1; i &gt;= 1; i--){
-	for(int j = 0; j &lt;= i - 1; j--){
-		if(is_swap()?) swap;
-	}
-}
-복사<br><br>교환이 더 이상 이뤄지지 않을 때에는 끝내 버린다. Flag가 있음<br>
-Improved Version의 경우 한번에 반복문을 나올 수도 있기 때문에,  Complexity가 best case <br>
-Performance
-<br><br><br>선택정렬: key의 우선순위가 있는 것과 제일 앞에 있는 것을 교체한다. 하나하나 비교를 해봐야 하므로, worst case와 best case모두 .<br>
-Performance
-<br><br><br>삽입 정렬은 한 칸씩 범위를 확장해 가면서 중간중간에 순서에 맞게 집어넣는 것을 말한다.<br>
-<img alt="Pasted image 20240406162937.png" src="lib\media\pasted-image-20240406162937.png"><br>
-위의 것 처럼 정렬하는 것을 삽입정렬이라고 하는데, Best case에는 가장 앞에 배치하면 되기 때문에 의 시간 복잡도를 가진다.<br><br><br><br>]]></description><link>micro-processor\l6.-recall-c-(part-5).html</link><guid isPermaLink="false">Micro processor/L6. Recall C (Part 5).md</guid><pubDate>Sat, 06 Apr 2024 07:31:02 GMT</pubDate><enclosure url="lib\media\pasted-image-20240406162937.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src=&quot;lib\media\pasted-image-20240406162937.png&quot;&gt;&lt;/figure&gt;</content:encoded></item></channel></rss>
+Size: priority queue의 element 개수를 출력한다.]]></description><link>micro-processor\l5.-recall-c-(part-4).html</link><guid isPermaLink="false">Micro processor/L5. Recall C (Part 4).md</guid><pubDate>Fri, 05 Apr 2024 17:34:59 GMT</pubDate><enclosure url="lib\media\pasted-image-20240406020645.png" length="0" type="image/png"/><content:encoded>&lt;figure&gt;&lt;img src="lib\media\pasted-image-20240406020645.png"&gt;&lt;/figure&gt;</content:encoded></item></channel></rss>
