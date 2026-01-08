@@ -1,0 +1,247 @@
+:root {
+  color-scheme: light;
+  font-family: "Noto Sans KR", "Inter", system-ui, -apple-system, sans-serif;
+  background-color: #0f1115;
+  color: #f8f8fb;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(93, 104, 255, 0.25), transparent 40%),
+    radial-gradient(circle at 20% 40%, rgba(255, 145, 77, 0.18), transparent 35%),
+    #0f1115;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 56px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 28px;
+  align-items: center;
+}
+
+.hero__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hero__tag {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  color: rgba(248, 248, 251, 0.65);
+}
+
+.hero__title {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.hero__subtitle {
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(248, 248, 251, 0.7);
+}
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.button {
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.hero__card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+  backdrop-filter: blur(12px);
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 18px;
+  color: #0f1115;
+  background: linear-gradient(135deg, #f9d976, #f39f86);
+}
+
+.hero__meta h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.hero__meta p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(248, 248, 251, 0.75);
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.section-card {
+  padding: 20px 22px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 12px;
+}
+
+.section-card h4 {
+  font-size: 16px;
+}
+
+.section-list {
+  display: grid;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.section-list strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.section-sub {
+  color: rgba(248, 248, 251, 0.7);
+  font-size: 13px;
+}
+
+.section-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(248, 248, 251, 0.7);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.entry {
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 17, 21, 0.75);
+  margin-bottom: 16px;
+}
+
+.entry__title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.entry__meta {
+  font-size: 13px;
+  color: rgba(248, 248, 251, 0.6);
+  margin-bottom: 10px;
+}
+
+.entry__list {
+  list-style: disc;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  color: rgba(248, 248, 251, 0.8);
+}
+
+.entry__text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(248, 248, 251, 0.75);
+}
+
+.skill-grid {
+  display: grid;
+  gap: 14px;
+  font-size: 14px;
+}
+
+.skill-grid strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.skill-grid p {
+  color: rgba(248, 248, 251, 0.7);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: rgba(248, 248, 251, 0.6);
+}
+
+.footer__badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 40px 20px 64px;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
