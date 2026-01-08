@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MinhjiH | CV</title>
+    <title>Jaehyun Choi | CV</title>
     <meta
       name="description"
-      content="minhjih의 이력서 전용 페이지. 곧 이력서 내용을 추가할 예정입니다."
+      content="Jaehyun Choi의 이력서 페이지. 연구 경험과 해커톤/대회 이력을 정리했습니다."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,124 +18,172 @@
   </head>
   <body>
     <main class="page">
-      <section class="hero">
+      <header class="hero">
         <div class="hero__intro">
-          <span class="hero__tag">Resume space</span>
-          <h1 class="hero__title">민지의 이력서 페이지</h1>
+          <span class="hero__tag">Curriculum Vitae</span>
+          <h1 class="hero__title">Jaehyun Choi</h1>
           <p class="hero__subtitle">
-            현재는 전체 레이아웃과 톤을 먼저 정리해 두었고, 이력서 내용을 전달받으면
-            빠르게 채워 넣을 수 있도록 섹션을 구성해 두었습니다.
+            M.S./Ph.D. Student, Electrical and Computer Engineering<br />
+            Seoul National University
           </p>
           <div class="hero__actions">
-            <a class="button" href="mailto:hello@minhjih.com">연락하기</a>
-            <a class="button" href="#timeline">커리어 타임라인</a>
+            <a class="button" href="mailto:jhchoi0226@snu.ac.kr">jhchoi0226@snu.ac.kr</a>
+            <a class="button" href="https://github.com/minhjih">github.com/minhjih</a>
           </div>
         </div>
         <article class="hero__card">
-          <h3>Profile Snapshot</h3>
-          <ul class="hero__list">
-            <li>
-              <span>한 줄 소개</span>
-              감각적인 제품 경험을 만드는 디자이너/개발자 (내용 예정)
-            </li>
-            <li>
-              <span>주요 키워드</span>
-              Product Design · Front-end · Branding
-            </li>
-            <li>
-              <span>거점</span>
-              Seoul · Remote
-            </li>
-          </ul>
+          <div class="avatar" aria-hidden="true">JC</div>
+          <div class="hero__meta">
+            <h3>Research Interests</h3>
+            <p>
+              AI-RAN, Digital Twin, Ray-Tracing Simulation, Learning-based Systems,
+              Foundation Model, Robot Control
+            </p>
+          </div>
         </article>
-      </section>
+      </header>
 
-      <section class="section-grid" aria-label="highlights">
+      <section class="section-grid" aria-label="education">
         <article class="section-card">
-          <h4>Highlights</h4>
-          <p>중요 성과 2~3개를 카드 형태로 강조할 공간입니다.</p>
-          <p class="placeholder">예시: 신규 서비스 런칭, MAU 성장, 디자인 시스템 구축</p>
-        </article>
-        <article class="section-card">
-          <h4>Core Skills</h4>
-          <p>핵심 역량을 태그/짧은 문장으로 배치합니다.</p>
-          <p class="placeholder">예시: UX Research, React, Prototyping, Storytelling</p>
+          <h4>Education</h4>
+          <div class="section-list">
+            <div>
+              <strong>Seoul National University (SNU)</strong>
+              <span class="section-sub">M.S./Ph.D. Integrated Program, ECE · Present</span>
+            </div>
+            <div>
+              <strong>POSTECH</strong>
+              <span class="section-sub">B.S. in Electrical Engineering · Graduated</span>
+            </div>
+          </div>
         </article>
         <article class="section-card">
           <h4>Contact</h4>
-          <p>이메일/포트폴리오 링크를 배치할 섹션입니다.</p>
-          <p class="placeholder">예시: hello@minhjih.com · behance.net/...</p>
+          <p class="section-text">
+            Email: <a href="mailto:jhchoi0226@snu.ac.kr">jhchoi0226@snu.ac.kr</a><br />
+            GitHub: <a href="https://github.com/minhjih">github.com/minhjih</a>
+          </p>
+        </article>
+        <article class="section-card">
+          <h4>Focus Areas</h4>
+          <p class="section-text">
+            Digital twin 기반 무선 환경 시뮬레이션과 GAN을 활용한 위치 추정의
+            강건성 향상, 그리고 학습 기반 시스템 연구에 집중하고 있습니다.
+          </p>
         </article>
       </section>
 
-      <section class="split" id="timeline">
+      <section class="split" id="research">
         <article>
-          <h3>Experience</h3>
-          <ul class="list">
-            <li>
-              <strong>회사명 · 직무</strong>
-              <div class="placeholder">2022.01 - 현재 · 주요 역할 요약 예정</div>
-            </li>
-            <li>
-              <strong>회사명 · 직무</strong>
-              <div class="placeholder">2020.03 - 2021.12 · 주요 역할 요약 예정</div>
-            </li>
-            <li>
-              <strong>회사명 · 프로젝트</strong>
-              <div class="placeholder">단기 프로젝트/프리랜스 경험 요약 예정</div>
-            </li>
-          </ul>
+          <h3>Research Experience</h3>
+          <div class="entry">
+            <div class="entry__title">
+              RT-AugGAN: Robust Fingerprint Positioning under Environmental Variations via Ray
+              Tracing-Assisted GAN Augmentation
+            </div>
+            <div class="entry__meta">IEEE/IEIE ICCE-ASIA 2025 · Accepted</div>
+            <ul class="entry__list">
+              <li>
+                Developed a ray tracing-assisted data augmentation framework combining digital twin
+                simulation and generative modeling.
+              </li>
+              <li>
+                Built high-fidelity wireless environments using NVIDIA Omniverse and Sionna RT for
+                realistic CSI generation.
+              </li>
+              <li>
+                Designed and trained GAN-based models to improve robustness of fingerprint-based
+                positioning systems.
+              </li>
+              <li>
+                Analyzed generalization performance under environmental variations using simulated
+                and real-world data.
+              </li>
+            </ul>
+          </div>
         </article>
         <article>
-          <h3>Projects</h3>
-          <ul class="list">
-            <li>
-              <strong>프로젝트 이름</strong>
-              <div class="placeholder">문제 정의, 기여 내용, 성과를 작성할 공간입니다.</div>
-            </li>
-            <li>
-              <strong>프로젝트 이름</strong>
-              <div class="placeholder">핵심 역할과 영향력을 요약합니다.</div>
-            </li>
-            <li>
-              <strong>프로젝트 이름</strong>
-              <div class="placeholder">링크 및 사용 기술 스택을 정리합니다.</div>
-            </li>
-          </ul>
+          <h3>Hackathon &amp; Competition</h3>
+          <div class="entry">
+            <div class="entry__title">
+              2025 Likelion Blackout Hackathon · Overall Winner / GCOO Track Winner
+            </div>
+            <div class="entry__meta">GARi: AI &amp; AR-based Shared Mobility Platform</div>
+            <ul class="entry__list">
+              <li>Implemented AI-based safety driving and parking assessment for shared mobility.</li>
+              <li>Collected real-world driving video data under severe time constraints.</li>
+              <li>Developed computer vision pipelines for driving behavior analysis and inference.</li>
+              <li>Integrated AI outputs with frontend and backend teams for a live service.</li>
+            </ul>
+          </div>
+          <div class="entry">
+            <div class="entry__title">Chung Ju-yung Startup Competition: Asan Doers · Finalist</div>
+            <div class="entry__meta">Reveal: Research Tracking &amp; Knowledge Sharing Platform</div>
+            <ul class="entry__list">
+              <li>Proposed a platform for tracking research trends and short-form paper insights.</li>
+              <li>Participated in system design and product planning discussions.</li>
+            </ul>
+          </div>
+          <div class="entry">
+            <div class="entry__title">Science Hackathon (SPARCS) · Second Prize</div>
+            <div class="entry__meta">ScienSnap</div>
+            <ul class="entry__list">
+              <li>Developed an AI-based application mapping everyday images to scientific concepts.</li>
+              <li>Implemented classification and ranking mechanisms for educational content.</li>
+            </ul>
+          </div>
+          <div class="entry">
+            <div class="entry__title">DataEn OIBC 2024 Big Data Challenge · Third Prize</div>
+            <div class="entry__meta">Jeju Electricity Market Forecasting</div>
+            <ul class="entry__list">
+              <li>Designed a hybrid model combining RNN, SARIMA, and Transformer architectures.</li>
+              <li>Achieved stable prediction performance under fluctuating market conditions.</li>
+            </ul>
+          </div>
         </article>
       </section>
 
       <section class="split">
         <article>
-          <h3>Education</h3>
-          <ul class="list">
-            <li>
-              <strong>학교명 · 전공</strong>
-              <div class="placeholder">졸업 연도 및 주요 활동 예정</div>
-            </li>
-            <li>
-              <strong>프로그램/수료 과정</strong>
-              <div class="placeholder">수료 연도 및 집중 분야 예정</div>
-            </li>
-          </ul>
+          <h3>Technical Skills</h3>
+          <div class="skill-grid">
+            <div>
+              <strong>Programming Languages</strong>
+              <p>Python (Advanced), C++ (Advanced), Verilog, Assembly Language</p>
+            </div>
+            <div>
+              <strong>Deep Learning</strong>
+              <p>PyTorch, Hugging Face</p>
+            </div>
+            <div>
+              <strong>Simulation &amp; Digital Twin</strong>
+              <p>Blender, NVIDIA Omniverse, Sionna RT, Ray Tracing</p>
+            </div>
+            <div>
+              <strong>Backend &amp; Systems</strong>
+              <p>Flask, FastAPI, Docker, Linux</p>
+            </div>
+            <div>
+              <strong>Cloud &amp; Database</strong>
+              <p>AWS EC2, PostgreSQL</p>
+            </div>
+          </div>
         </article>
         <article>
-          <h3>Extras</h3>
-          <ul class="list">
-            <li>
-              <strong>수상/자격증</strong>
-              <div class="placeholder">수상명 또는 자격증 정보를 정리합니다.</div>
-            </li>
-            <li>
-              <strong>커뮤니티/발표</strong>
-              <div class="placeholder">발표 주제, 커뮤니티 활동 요약 예정</div>
-            </li>
-          </ul>
+          <h3>Honors</h3>
+          <div class="entry">
+            <div class="entry__title">KEPCO Academic Scholarship</div>
+            <div class="entry__meta">2023 · Korea Electric Power Corporation</div>
+            <p class="entry__text">
+              Selected as a national scholarship recipient based on academic excellence and
+              potential in the energy sector.
+            </p>
+          </div>
         </article>
       </section>
 
       <footer class="footer">
-        <span>Resume content update pending.</span>
+        <span>Last updated 2025.</span>
         <span class="footer__badge">minhjih.github.io/cv</span>
       </footer>
     </main>
