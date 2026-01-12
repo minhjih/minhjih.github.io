@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jaehyun Choi | CV</title>
+    <meta
+      name="description"
+      content="Jaehyun Choi의 이력서 페이지. 연구 경험, 논문, 대회 경험을 소개합니다."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand__label">Curriculum Vitae</span>
+          <span class="brand__name">Jaehyun Choi</span>
+        </div>
+        <nav class="nav">
+          <a href="#about">About</a>
+          <a href="#publications">Publications</a>
+          <a href="#competitive">Competitive &amp; Prize</a>
+          <a href="#contact">Contact</a>
+        </nav>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar">
+          <div class="photo-card">
+            <div class="photo-placeholder">Your Photo</div>
+            <p class="photo-note">사진 파일을 넣을 위치</p>
+          </div>
+          <div class="sidebar-block">
+            <h2>Position</h2>
+            <p>M.S./Ph.D. Student, Electrical and Computer Engineering</p>
+            <p>Seoul National University</p>
+          </div>
+          <div class="sidebar-block">
+            <h2>Research Interests</h2>
+            <p>
+              AI-RAN, Digital Twin, Ray-Tracing Simulation, Learning-based Systems, Foundation
+              Model, Robot Control
+            </p>
+          </div>
+        </aside>
+
+        <section class="content">
+          <section id="about" class="section">
+            <div class="section-header">
+              <h1>About Me</h1>
+              <p class="section-subtitle">
+                연구 중심의 이력서로 구성된 개인 페이지입니다. 핵심 연구 경험과 프로젝트,
+                그리고 대회 성과를 정리했습니다.
+              </p>
+            </div>
+            <div class="card">
+              <h3>Education</h3>
+              <div class="row">
+                <div>
+                  <strong>Seoul National University (SNU)</strong>
+                  <p>M.S./Ph.D. Integrated Program, Electrical and Computer Engineering</p>
+                </div>
+                <span>Present</span>
+              </div>
+              <div class="row">
+                <div>
+                  <strong>POSTECH</strong>
+                  <p>B.S. in Electrical Engineering</p>
+                </div>
+                <span>Graduated</span>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Research Experience</h3>
+              <p class="meta">IEEE/IEIE ICCE-ASIA 2025 · Accepted</p>
+              <p>
+                RT-AugGAN: Robust Fingerprint Positioning under Environmental Variations via Ray
+                Tracing-Assisted GAN Augmentation
+              </p>
+              <ul>
+                <li>
+                  Developed a ray tracing-assisted data augmentation framework combining digital
+                  twin simulation and generative modeling.
+                </li>
+                <li>
+                  Built high-fidelity wireless environments using NVIDIA Omniverse and Sionna RT for
+                  realistic CSI generation.
+                </li>
+                <li>
+                  Designed and trained GAN-based models to improve robustness of fingerprint-based
+                  positioning systems.
+                </li>
+                <li>
+                  Analyzed generalization performance under environmental variations using simulated
+                  and real-world data.
+                </li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Technical Skills</h3>
+              <div class="pill-grid">
+                <span>Python (Advanced)</span>
+                <span>C++ (Advanced)</span>
+                <span>Verilog</span>
+                <span>Assembly Language</span>
+                <span>PyTorch</span>
+                <span>Hugging Face</span>
+                <span>Blender</span>
+                <span>NVIDIA Omniverse</span>
+                <span>Sionna RT</span>
+                <span>Ray Tracing</span>
+                <span>Flask</span>
+                <span>FastAPI</span>
+                <span>Docker</span>
+                <span>Linux</span>
+                <span>AWS EC2</span>
+                <span>PostgreSQL</span>
+              </div>
+            </div>
+          </section>
+
+          <section id="publications" class="section">
+            <div class="section-header">
+              <h1>Publications</h1>
+              <p class="section-subtitle">논문/연구 결과를 정리한 섹션입니다.</p>
+            </div>
+            <div class="card">
+              <h3>
+                RT-AugGAN: Robust Fingerprint Positioning under Environmental Variations via Ray
+                Tracing-Assisted GAN Augmentation
+              </h3>
+              <p class="meta">IEEE/IEIE ICCE-ASIA 2025 · Accepted</p>
+              <p>
+                Ray tracing 기반 증강 데이터셋과 GAN 모델을 결합하여 환경 변화에 강건한
+                위치 추정 기법을 제안했습니다.
+              </p>
+            </div>
+          </section>
+
+          <section id="competitive" class="section">
+            <div class="section-header">
+              <h1>Competitive &amp; Prize</h1>
+              <p class="section-subtitle">해커톤 및 대회에서의 주요 성과입니다.</p>
+            </div>
+            <div class="card">
+              <h3>2025 Likelion Blackout Hackathon</h3>
+              <p class="meta">Overall Winner / GCOO Track Winner · GARi</p>
+              <ul>
+                <li>Implemented AI-based safety driving and parking assessment for shared mobility.</li>
+                <li>Collected real-world driving video data under severe time constraints.</li>
+                <li>Developed computer vision pipelines for driving behavior analysis and inference.</li>
+                <li>Collaborated with frontend and backend teams to integrate AI outputs.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Chung Ju-yung Startup Competition: Asan Doers</h3>
+              <p class="meta">Finalist · Reveal: Research Tracking &amp; Knowledge Sharing Platform</p>
+              <ul>
+                <li>Proposed a platform for tracking research trends and sharing short-form insights.</li>
+                <li>Participated in system design and product planning discussions.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Science Hackathon (SPARCS)</h3>
+              <p class="meta">Second Prize · ScienSnap</p>
+              <ul>
+                <li>Developed an AI-based application mapping everyday images to scientific concepts.</li>
+                <li>Implemented classification and ranking mechanisms for educational content.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>DataEn OIBC 2024 Big Data Challenge</h3>
+              <p class="meta">Third Prize · Jeju Electricity Market Forecasting</p>
+              <ul>
+                <li>Designed a hybrid model combining RNN, SARIMA, and Transformer architectures.</li>
+                <li>Achieved stable prediction performance under fluctuating market conditions.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Honors</h3>
+              <p class="meta">KEPCO Academic Scholarship · 2023</p>
+              <p>
+                Selected as a national scholarship recipient based on academic excellence and
+                potential in the energy sector.
+              </p>
+            </div>
+          </section>
+
+          <section id="contact" class="section">
+            <div class="section-header">
+              <h1>Contact</h1>
+              <p class="section-subtitle">연락 가능한 채널을 정리했습니다.</p>
+            </div>
+            <div class="card contact-card">
+              <p>Email: <a href="mailto:jhchoi0226@snu.ac.kr">jhchoi0226@snu.ac.kr</a></p>
+              <p>GitHub: <a href="https://github.com/minhjih">github.com/minhjih</a></p>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
