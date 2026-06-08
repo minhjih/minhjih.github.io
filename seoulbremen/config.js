@@ -17,7 +17,7 @@
 
 window.SEOUL_BREMEN_CONFIG = {
   // [A] 앱스 스크립트 웹앱 주소 (예: https://script.google.com/macros/s/AKfy.../exec )
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbw-cCHJGmAAInw8bUSNvaMeTCfmpsW7u0sr6NO2Myo5dzQ28ufRRfB-Z4Ml6HdtxElYiA/exec",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxhuUpWPiHWYrDWLCNvzEpIG3JnWD2EYedMQtFlF3JKAErD3OcJbRiGD222G3EWpD04uw/exec",
 
   // [A] 웹에서 편집할 때 입력할 비밀번호 (앱스 스크립트의 EDIT_KEY와 똑같이!)
   EDIT_KEY: "bremen0101",
