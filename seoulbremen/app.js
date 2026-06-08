@@ -16,7 +16,7 @@ const CLUB_DEFAULT = {
     "서울 브레멘은 합주를 사랑하는 사람들이 모인 음악 동아리입니다. 매주 모여 함께 연습하고, 무대를 만들고, 그 순간들을 기록합니다.",
 };
 
-let STATE = { rehearsals: [], songs: [], photos: [], members: [], poll: [], votes: [] };
+let STATE = { rehearsals: [], songs: [], photos: [], members: [], poll: [], votes: [], comments: [] };
 let IS_ADMIN = false;
 
 // ---------------- 유틸 ----------------
@@ -143,6 +143,7 @@ function normalize(raw) {
     members: (raw.members || []).map((m) => ({ _row: m._row, name: m.name, part: m.part, joined: m.joined })),
     poll: (raw.poll || []).map((p) => ({ _row: p._row, date: p.date, time: p.time, note: p.note })),
     votes: (raw.votes || []).map((v) => ({ _row: v._row, option: v.option, name: v.name })),
+    comments: (raw.comments || []).map((c) => ({ _row: c._row, name: c.name, comment: c.comment, time: c.time })),
   };
 }
 
@@ -506,7 +507,10 @@ function renderMembers() {
     </div>`).join("");
 }
 
-// ---- 투표 ----
+// ---- 투표 (날짜 달력) ----
+let POLL_VIEW = (() => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d; })();
+let POLL_EDIT = false; // 관리자: 후보 날짜 편집 모드
+
 function getVoterName() {
   let n = localStorage.getItem("sb_voter");
   if (n) return n;
@@ -515,73 +519,210 @@ function getVoterName() {
   return n;
 }
 
-async function toggleVote(key) {
+// 후보 날짜 목록 / 날짜→poll행 매핑
+function candidateRows() {
+  const map = {};
+  STATE.poll.forEach((p) => { if (p.date) map[String(p.date).trim()] = p._row; });
+  return map;
+}
+
+async function toggleVote(dateStr) {
   if (!CFG.SCRIPT_URL) { alert("투표하려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
   const name = getVoterName();
   if (!name) return;
-  const voted = votersFor(key).includes(name);
+  const voted = votersFor(dateStr).includes(name);
   try {
-    await postToSheet({ action: voted ? "removeVote" : "addVote", option: key, name });
+    await postToSheet({ action: voted ? "removeVote" : "addVote", option: dateStr, name });
     await refresh();
   } catch (e) { alert("투표 실패: " + e.message); }
+}
+
+async function toggleCandidate(dateStr) {
+  if (!CFG.SCRIPT_URL) { alert("후보를 올리려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  const rows = candidateRows();
+  try {
+    if (rows[dateStr] != null) {
+      await postToSheet({ action: "delete", tab: "poll", row: rows[dateStr] });
+    } else {
+      await postToSheet({ action: "add", tab: "poll", values: { date: dateStr } });
+    }
+    await refresh();
+  } catch (e) { alert("후보 변경 실패: " + e.message); }
 }
 
 function renderVoterBar() {
   const el = document.getElementById("poll-voter");
   const name = localStorage.getItem("sb_voter");
-  el.innerHTML = name
+  const editBtn = IS_ADMIN && CFG.SCRIPT_URL
+    ? `<button class="link-btn ${POLL_EDIT ? "on" : ""}" id="poll-edit-toggle">${POLL_EDIT ? "✓ 후보 편집 중 (완료)" : "✏️ 후보 날짜 편집"}</button>`
+    : "";
+  const namePart = name
     ? `투표 이름: <b>${escapeHtml(name)}</b> <button class="link-btn" id="voter-change">변경</button>`
     : `<button class="link-btn" id="voter-set">투표할 이름 설정</button>`;
+  el.innerHTML = `<div>${namePart}</div><div>${editBtn}</div>`;
+
   const set = document.getElementById("voter-set");
-  if (set) set.addEventListener("click", () => { getVoterName(); renderVoterBar(); });
+  if (set) set.addEventListener("click", () => { getVoterName(); renderPoll(); });
   const ch = document.getElementById("voter-change");
   if (ch) ch.addEventListener("click", () => {
     const n = (prompt("투표에 사용할 이름:", name) || "").trim();
-    if (n) { localStorage.setItem("sb_voter", n); renderVoterBar(); renderPoll(); }
+    if (n) { localStorage.setItem("sb_voter", n); renderPoll(); }
   });
+  const et = document.getElementById("poll-edit-toggle");
+  if (et) et.addEventListener("click", () => { POLL_EDIT = !POLL_EDIT; renderPoll(); });
 }
+
+const DOW = ["일", "월", "화", "수", "목", "금", "토"];
 
 function renderPoll() {
   renderVoterBar();
   const el = document.getElementById("poll");
-  const list = STATE.poll;
-  if (!list.length) {
-    el.innerHTML = `<div class="empty">아직 투표 후보가 없습니다.${IS_ADMIN ? " 위의 <b>+ 후보 추가</b> 로 날짜를 올려보세요!" : ""}</div>`;
-    return;
-  }
   const myName = localStorage.getItem("sb_voter");
-  const counts = list.map((o) => votersFor(pollKey(o)).length);
-  const max = Math.max(0, ...counts);
+  const cands = candidateRows();
+  const candSet = new Set(Object.keys(cands));
+  const y = POLL_VIEW.getFullYear(), mo = POLL_VIEW.getMonth();
+  const pad = (n) => String(n).padStart(2, "0");
+  const startDow = new Date(y, mo, 1).getDay();
+  const daysIn = new Date(y, mo + 1, 0).getDate();
 
-  const sorted = [...list].sort((a, b) => votersFor(pollKey(b)).length - votersFor(pollKey(a)).length);
-  el.innerHTML = sorted.map((o) => {
-    const key = pollKey(o);
-    const voters = votersFor(key);
-    const voted = myName && voters.includes(myName);
+  let cells = "";
+  for (let i = 0; i < startDow; i++) cells += `<div class="cal-cell empty"></div>`;
+  for (let d = 1; d <= daysIn; d++) {
+    const ds = `${y}-${pad(mo + 1)}-${pad(d)}`;
+    const dow = new Date(y, mo, d).getDay();
+    const isCand = candSet.has(ds);
+    const cnt = votersFor(ds).length;
+    const mine = myName && votersFor(ds).includes(myName);
+    let cls = `cal-cell dow${dow}`;
+    let attr = "";
+    if (POLL_EDIT) {
+      cls += " editable" + (isCand ? " cand" : "");
+      attr = `data-canddate="${ds}"`;
+    } else if (isCand) {
+      cls += " cand votable" + (mine ? " mine" : "");
+      attr = `data-votedate="${ds}"`;
+    } else {
+      cls += " disabled";
+    }
+    cells += `<button class="${cls}" ${attr} ${attr ? "" : "disabled"}>
+      <span class="cal-d">${d}</span>
+      ${!POLL_EDIT && isCand ? `<span class="cal-cnt">${cnt}</span>` : ""}
+      ${POLL_EDIT && isCand ? `<span class="cal-cand-dot">●</span>` : ""}
+    </button>`;
+  }
+
+  const hint = POLL_EDIT
+    ? `<div class="cal-hint">📌 후보로 넣을 날짜를 누르세요. 다시 누르면 후보에서 빠집니다.</div>`
+    : (candSet.size ? `<div class="cal-hint">가능한 날짜를 누르면 투표돼요. 같은 날을 다시 누르면 취소됩니다.</div>`
+                    : `<div class="cal-hint">아직 후보 날짜가 없어요.${IS_ADMIN ? " ‘후보 날짜 편집’으로 날짜를 올려보세요." : " 관리자가 후보를 올리면 투표할 수 있어요."}</div>`);
+
+  el.innerHTML = `
+    <div class="cal-nav">
+      <button class="link-btn" id="cal-prev">‹</button>
+      <div class="cal-title">${y}년 ${mo + 1}월</div>
+      <button class="link-btn" id="cal-next">›</button>
+    </div>
+    <div class="cal-grid">
+      ${DOW.map((w, i) => `<div class="cal-dow ${i === 0 ? "s" : i === 6 ? "t" : ""}">${w}</div>`).join("")}
+      ${cells}
+    </div>
+    ${hint}
+    ${renderPollSummary(candSet, cands)}
+  `;
+
+  document.getElementById("cal-prev").onclick = () => { POLL_VIEW = new Date(y, mo - 1, 1); renderPoll(); };
+  document.getElementById("cal-next").onclick = () => { POLL_VIEW = new Date(y, mo + 1, 1); renderPoll(); };
+  el.querySelectorAll("[data-votedate]").forEach((b) =>
+    b.addEventListener("click", () => toggleVote(b.dataset.votedate)));
+  el.querySelectorAll("[data-canddate]").forEach((b) =>
+    b.addEventListener("click", () => toggleCandidate(b.dataset.canddate)));
+}
+
+// 후보 날짜별 득표 요약 (최다 강조)
+function renderPollSummary(candSet, cands) {
+  const dates = [...candSet];
+  if (!dates.length) return "";
+  const counts = dates.map((d) => votersFor(d).length);
+  const max = Math.max(0, ...counts);
+  const myName = localStorage.getItem("sb_voter");
+  const sorted = dates.sort((a, b) => votersFor(b).length - votersFor(a).length || a.localeCompare(b));
+  const rows = sorted.map((ds) => {
+    const voters = votersFor(ds);
     const isTop = voters.length > 0 && voters.length === max;
-    const dd = fmtDate(o.date);
+    const dt = new Date(ds);
+    const label = isNaN(dt) ? ds : `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})`;
+    const voted = myName && voters.includes(myName);
     const chips = voters.map((v) => `<span class="avatar"><span class="dot">${escapeHtml(initials(v))}</span>${escapeHtml(v)}</span>`).join("");
     return `<div class="poll-opt ${isTop ? "top" : ""}">
       <div class="poll-opt-head">
-        <div class="date-badge"><span class="d">${dd.d}</span><span class="m">${dd.m}</span></div>
         <div class="poll-opt-info">
-          <h3>${o.time ? escapeHtml(formatTime(o.time)) : "시간 미정"} ${isTop ? '<span class="tag-next">최다</span>' : ""}</h3>
-          ${o.note ? `<div class="poll-note">${escapeHtml(o.note)}</div>` : ""}
+          <h3>${escapeHtml(label)} ${isTop ? '<span class="tag-next">최다</span>' : ""}</h3>
         </div>
         <div class="poll-count"><b>${voters.length}</b><span>표</span></div>
       </div>
       ${chips ? `<div class="poll-voters">${chips}</div>` : `<div class="poll-voters poll-empty-voters">아직 투표 없음</div>`}
-      <div class="poll-actions">
-        <button class="vote-btn ${voted ? "voted" : ""}" data-votekey="${escapeHtml(key)}">${voted ? "✓ 투표함 (취소)" : "🙋 가능해요"}</button>
-        ${adminCtrls("poll", o._row)}
-      </div>
+      ${!POLL_EDIT ? `<div class="poll-actions"><button class="vote-btn ${voted ? "voted" : ""}" data-votedate="${escapeHtml(ds)}">${voted ? "✓ 투표함 (취소)" : "🙋 가능해요"}</button></div>` : ""}
     </div>`;
   }).join("");
+  return `<div class="poll-summary"><div class="poll-summary-title">📊 후보별 현황</div>${rows}</div>`;
+}
+
+async function submitComment() {
+  if (!CFG.SCRIPT_URL) { alert("댓글을 남기려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  const input = document.getElementById("comment-input");
+  const text = (input.value || "").trim();
+  if (!text) return;
+  const name = getVoterName();
+  if (!name) return;
+  const btn = document.getElementById("comment-submit");
+  btn.disabled = true;
+  try {
+    await postToSheet({ action: "addComment", name, comment: text });
+    input.value = "";
+    await refresh();
+  } catch (e) { alert("댓글 등록 실패: " + e.message); }
+  finally { btn.disabled = false; }
+}
+
+function renderComments() {
+  const el = document.getElementById("poll-comments");
+  if (!el) return;
+  const list = [...STATE.comments].reverse(); // 최신순
+  const items = list.length
+    ? list.map((c) => `
+      <div class="comment">
+        <div class="comment-head">
+          <span class="comment-name">${escapeHtml(c.name || "익명")}</span>
+          ${c.time ? `<span class="comment-time">${escapeHtml(c.time)}</span>` : ""}
+        </div>
+        <div class="comment-body">${escapeHtml(c.comment || "")}</div>
+        ${IS_ADMIN && c._row ? `<button class="ic-btn danger" data-delcomment="${c._row}">🗑️</button>` : ""}
+      </div>`).join("")
+    : `<div class="comment-empty">아직 댓글이 없어요. 투표하면서 특이사항을 남겨주세요!</div>`;
+
+  el.innerHTML = `
+    <div class="comments-title">💬 특이사항 / 댓글</div>
+    <div class="comment-form">
+      <textarea id="comment-input" rows="2" placeholder="특이사항을 남겨주세요 (예: 주말만 가능, 시험기간이라 저녁만 돼요)"></textarea>
+      <button class="btn btn-primary" id="comment-submit">남기기</button>
+    </div>
+    <div class="comment-list">${items}</div>`;
+
+  document.getElementById("comment-submit").addEventListener("click", submitComment);
+  el.querySelectorAll("[data-delcomment]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      if (!confirm("이 댓글을 삭제할까요?")) return;
+      try {
+        await postToSheet({ action: "delete", tab: "comments", row: b.dataset.delcomment });
+        await refresh();
+      } catch (e) { alert("삭제 실패: " + e.message); }
+    }));
 }
 
 function renderAll() {
   renderRehearsals();
   renderPoll();
+  renderComments();
   renderSongs();
   renderMembers();
   renderPhotos();
