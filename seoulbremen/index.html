@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>서울 브레멘 🎵</title>
+  <meta name="description" content="서울 브레멘 - 합주 동아리. 합주 일정, 연습곡, 활동 사진 아카이브." />
+  <meta property="og:title" content="서울 브레멘 🎵" />
+  <meta property="og:description" content="합주 일정 · 연습곡 · 활동 사진을 한 곳에서" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-brand">서울 <span>브레멘</span> 🎵</div>
+      <div class="nav-links">
+        <a href="#rehearsals-sec">합주 일정</a>
+        <a href="#songs-sec">연습곡</a>
+        <a href="#gallery-sec">사진</a>
+        <a href="#" id="admin-toggle">관리</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container">
+      <h1 id="club-name">서울 <span class="accent">브레멘</span></h1>
+      <p class="tagline" id="tagline"></p>
+      <p class="desc" id="desc"></p>
+      <div class="hero-meta">
+        <div class="stat"><div class="num" id="stat-rehearsals">0</div><div class="label">합주</div></div>
+        <div class="stat"><div class="num" id="stat-songs">0</div><div class="label">연습곡</div></div>
+        <div class="stat"><div class="num" id="stat-photos">0</div><div class="label">사진</div></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="rehearsals-sec">
+      <div class="section-head">
+        <h2>🗓️ 합주 일정
+          <button class="add-btn" data-add="rehearsal" hidden>+ 추가</button>
+        </h2>
+        <div class="sub">언제, 어디서, 누가 모이고 어떤 곡을 연습하는지</div>
+      </div>
+      <div id="rehearsals"></div>
+    </section>
+
+    <section id="songs-sec">
+      <div class="section-head">
+        <h2>🎼 연습곡
+          <button class="add-btn" data-add="song" hidden>+ 추가</button>
+        </h2>
+        <div class="sub">지금 함께 연습하고 있는 곡들</div>
+      </div>
+      <div id="songs" class="song-grid"></div>
+    </section>
+
+    <section id="gallery-sec">
+      <div class="section-head">
+        <h2>📷 활동 사진
+          <button class="add-btn" data-add="photo" hidden>+ 추가</button>
+        </h2>
+        <div class="sub">함께한 순간들의 기록</div>
+      </div>
+      <div id="gallery" class="gallery"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>🎵 서울 브레멘 · <a href="../">minhjih.github.io</a></p>
+    <p style="margin-top:6px; opacity:0.7;">함께 모여 소리를 내는 사람들</p>
+  </footer>
+
+  <!-- 사진 라이트박스 -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" aria-label="닫기">&times;</button>
+    <img id="lb-img" src="" alt="" />
+    <div class="lb-cap" id="lb-cap"></div>
+  </div>
+
+  <!-- 편집 모달 -->
+  <div class="modal" id="modal">
+    <div class="modal-box">
+      <button class="modal-close" id="modal-close" aria-label="닫기">&times;</button>
+      <h3 id="modal-title">추가</h3>
+      <form id="modal-form"></form>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="modal-delete" hidden>삭제</button>
+        <button type="submit" form="modal-form" class="btn btn-primary" id="modal-save">저장</button>
+      </div>
+      <div class="modal-status" id="modal-status"></div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
