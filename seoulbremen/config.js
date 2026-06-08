@@ -22,10 +22,14 @@ window.SEOUL_BREMEN_CONFIG = {
   // [A] 웹에서 편집할 때 입력할 비밀번호 (앱스 스크립트의 EDIT_KEY와 똑같이!)
   EDIT_KEY: "",
 
-  // [B] 공개 시트 읽기용 ID (앱스 스크립트를 쓰면 비워둬도 됩니다)
+  // [B] 스프레드시트 ID (파일 1개) — 이 한 줄로 아래 4개 탭에 모두 접근합니다.
+  //     주소 https://docs.google.com/spreadsheets/d/<여기가_ID>/edit
+  //     ※ 앱스 스크립트(SCRIPT_URL)를 쓰면 비워둬도 됩니다.
   SHEET_ID: "",
 
-  // 탭(시트) 이름 — 구글 시트의 탭 이름과 똑같이 맞추세요.
+  // 위 스프레드시트 "한 파일 안"의 탭(아래쪽 시트) 이름들.
+  //   하나의 스프레드시트에 아래 4개 탭을 만들고 이름을 똑같이 맞추세요.
+  //   (탭 이름이 다르면 여기 값을 실제 탭 이름으로 바꾸면 됩니다.)
   TABS: {
     rehearsals: "rehearsals",
     songs: "songs",
