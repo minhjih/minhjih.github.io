@@ -22,6 +22,9 @@ window.SEOUL_BREMEN_CONFIG = {
   // [A] 웹에서 편집할 때 입력할 비밀번호 (앱스 스크립트의 EDIT_KEY와 똑같이!)
   EDIT_KEY: "",
 
+  // 사진 업로드 비밀번호 (앱스 스크립트의 UPLOAD_KEY와 똑같이!)
+  UPLOAD_KEY: "bremen0101",
+
   // [선택] 사진 공유 드라이브 폴더 ID — 넣으면 갤러리에 "드라이브 폴더 열기" 링크가 생깁니다.
   //   (실제 사진 업로드/표시는 앱스 스크립트의 PHOTOS_FOLDER_ID 로 처리됩니다.)
   DRIVE_FOLDER_ID: "",

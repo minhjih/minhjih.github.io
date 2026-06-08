@@ -23,8 +23,11 @@
  *  ※ 코드 수정 시 [배포]→[배포 관리]→편집→새 버전으로 다시 배포하세요.
  ****************************************************************/
 
-// 편집 비밀번호 — 반드시 바꾸고, config.js 의 EDIT_KEY 와 동일하게!
+// 편집 비밀번호(관리자) — 반드시 바꾸고, config.js 의 EDIT_KEY 와 동일하게!
 var EDIT_KEY = "change-me";
+
+// 사진 업로드 비밀번호 — config.js 의 UPLOAD_KEY 와 동일하게!
+var UPLOAD_KEY = "bremen0101";
 
 // 사진을 보관할 공유 드라이브 "폴더" ID (없으면 photos 탭/데모로 동작)
 var PHOTOS_FOLDER_ID = "";
@@ -53,8 +56,11 @@ function doPost(e) {
   }
 
   try {
-    // 사진 업로드는 누구나 가능 (비밀번호 불필요)
+    // 사진 업로드 — 업로드 비밀번호(또는 관리자 비밀번호) 필요
     if (data.action === "uploadPhoto") {
+      if (data.key !== UPLOAD_KEY && data.key !== EDIT_KEY) {
+        return json({ ok: false, error: "업로드 비밀번호가 올바르지 않습니다." });
+      }
       return uploadPhoto(data);
     }
     // 사진 삭제는 관리자만

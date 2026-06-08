@@ -211,11 +211,28 @@ function resizeImage(file, maxDim = 1600, quality = 0.85) {
   });
 }
 
+// 업로드 비밀번호 얻기 (관리자면 그대로, 아니면 한 번 입력받아 세션에 저장)
+function getUploadKey() {
+  if (IS_ADMIN && CFG.EDIT_KEY) return CFG.EDIT_KEY;
+  let k = sessionStorage.getItem("sb_upload_key");
+  if (k) return k;
+  k = prompt("사진 업로드 비밀번호를 입력하세요:");
+  if (k == null) return null;
+  if (CFG.UPLOAD_KEY && k !== CFG.UPLOAD_KEY) {
+    alert("업로드 비밀번호가 올바르지 않습니다.");
+    return null;
+  }
+  sessionStorage.setItem("sb_upload_key", k);
+  return k;
+}
+
 async function uploadPhotos(files) {
   if (!CFG.SCRIPT_URL) {
     alert("사진 업로드 기능을 쓰려면 config.js 에 SCRIPT_URL(앱스 스크립트)을 연결해야 합니다. SETUP.md 참고.");
     return;
   }
+  const uploadKey = getUploadKey();
+  if (uploadKey == null) return;
   const btn = document.getElementById("photo-upload-btn");
   const orig = btn.textContent;
   let done = 0;
@@ -228,11 +245,12 @@ async function uploadPhotos(files) {
         ? (prompt("사진 설명(선택):", file.name.replace(/\.[^.]+$/, "")) || "")
         : file.name.replace(/\.[^.]+$/, "");
       const { base64, mimeType } = await resizeImage(file);
-      await postToSheet({ action: "uploadPhoto", fileData: base64, mimeType, caption });
+      await postToSheet({ action: "uploadPhoto", key: uploadKey, fileData: base64, mimeType, caption });
     }
     btn.textContent = "✅ 완료!";
     await refresh();
   } catch (err) {
+    if (/비밀번호/.test(err.message)) sessionStorage.removeItem("sb_upload_key");
     alert("업로드 실패: " + err.message);
   } finally {
     setTimeout(() => (btn.textContent = orig), 1200);
