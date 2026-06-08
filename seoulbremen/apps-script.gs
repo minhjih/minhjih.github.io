@@ -38,7 +38,7 @@ var PHOTOS_FOLDER_ID = "";
 var SPREADSHEET_ID = "";
 
 // 시트 탭 이름 (사진은 폴더에서 가져오므로 photos 탭은 선택)
-var TABS = ["rehearsals", "songs", "members", "poll"];
+var TABS = ["rehearsals", "songs", "members", "poll", "comments"];
 
 // 스프레드시트 핸들 (독립 프로젝트면 openById, 시트에 붙어있으면 active)
 function getBook_() {
@@ -87,6 +87,10 @@ function doPost(e) {
     // 일정 투표 — 누구나 가능 (이름으로 기록)
     if (data.action === "addVote" || data.action === "removeVote") {
       return handleVote(data);
+    }
+    // 투표 댓글(특이사항) — 누구나 가능
+    if (data.action === "addComment") {
+      return addComment(data);
     }
     // 사진 업로드 — 업로드 비밀번호(또는 관리자 비밀번호) 필요
     if (data.action === "uploadPhoto") {
@@ -165,6 +169,24 @@ function handleVote(data) {
   } else {
     if (foundRow > 0) sh.deleteRow(foundRow);
   }
+  return json({ ok: true });
+}
+
+// ----- 투표 댓글 추가 -----
+function addComment(data) {
+  if (!data.comment) return json({ ok: false, error: "내용이 비어 있습니다." });
+  var sh = getBook_().getSheetByName("comments");
+  if (!sh) return json({ ok: false, error: "comments 탭이 없습니다." });
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim().toLowerCase(); });
+  var ni = headers.indexOf("name"), ci = headers.indexOf("comment"), ti = headers.indexOf("time");
+  if (ci < 0) return json({ ok: false, error: "comments 탭 머리글은 name, comment, time 이어야 합니다." });
+  var now = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+  var full = [];
+  for (var c = 0; c < headers.length; c++) {
+    full[c] = c === ni ? (data.name || "익명") : c === ci ? data.comment : c === ti ? now : "";
+  }
+  sh.appendRow(full);
   return json({ ok: true });
 }
 
