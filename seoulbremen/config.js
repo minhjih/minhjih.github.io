@@ -17,10 +17,10 @@
 
 window.SEOUL_BREMEN_CONFIG = {
   // [A] 앱스 스크립트 웹앱 주소 (예: https://script.google.com/macros/s/AKfy.../exec )
-  SCRIPT_URL: "",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzHKFwEGn7G1NSbgs_QzYP1fVirROFOZ5q8o_KmXViaJe6K65U2JiZUKLpAF7cPxUyppw/exec",
 
   // [A] 웹에서 편집할 때 입력할 비밀번호 (앱스 스크립트의 EDIT_KEY와 똑같이!)
-  EDIT_KEY: "",
+  EDIT_KEY: "bremen0101",
 
   // [B] 공개 시트 읽기용 ID (앱스 스크립트를 쓰면 비워둬도 됩니다)
   SHEET_ID: "",
