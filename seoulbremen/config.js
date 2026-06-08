@@ -27,7 +27,7 @@ window.SEOUL_BREMEN_CONFIG = {
 
   // [선택] 사진 공유 드라이브 폴더 ID — 넣으면 갤러리에 "드라이브 폴더 열기" 링크가 생깁니다.
   //   (실제 사진 업로드/표시는 앱스 스크립트의 PHOTOS_FOLDER_ID 로 처리됩니다.)
-  DRIVE_FOLDER_ID: "https://drive.google.com/drive/folders/11oWl1JSrWjNeJeUeFvaKu_Q1eG792Vjk?usp=sharing",
+  DRIVE_FOLDER_ID: "11oWl1JSrWjNeJeUeFvaKu_Q1eG792Vjk",
 
   // [B] 스프레드시트 ID (파일 1개) — 이 한 줄로 아래 4개 탭에 모두 접근합니다.
   //     주소 https://docs.google.com/spreadsheets/d/<여기가_ID>/edit
