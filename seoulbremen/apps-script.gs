@@ -38,7 +38,7 @@ var PHOTOS_FOLDER_ID = "";
 var SPREADSHEET_ID = "";
 
 // 시트 탭 이름 (사진은 폴더에서 가져오므로 photos 탭은 선택)
-var TABS = ["rehearsals", "songs", "members"];
+var TABS = ["rehearsals", "songs", "members", "poll"];
 
 // 스프레드시트 핸들 (독립 프로젝트면 openById, 시트에 붙어있으면 active)
 function getBook_() {
@@ -65,6 +65,12 @@ function doGet(e) {
     out.photos = [];
     out._photoError = String(errPhoto);
   }
+  // 투표 기록
+  try {
+    out.votes = readSheet("votes");
+  } catch (errVote) {
+    out.votes = [];
+  }
   return json(out);
 }
 
@@ -78,6 +84,10 @@ function doPost(e) {
   }
 
   try {
+    // 일정 투표 — 누구나 가능 (이름으로 기록)
+    if (data.action === "addVote" || data.action === "removeVote") {
+      return handleVote(data);
+    }
     // 사진 업로드 — 업로드 비밀번호(또는 관리자 비밀번호) 필요
     if (data.action === "uploadPhoto") {
       if (data.key !== UPLOAD_KEY && data.key !== EDIT_KEY) {
@@ -125,6 +135,37 @@ function doPost(e) {
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }
+}
+
+// ----- 투표 추가/취소 -----
+function handleVote(data) {
+  if (!data.option || !data.name) return json({ ok: false, error: "option/name 이 필요합니다." });
+  var sh = getBook_().getSheetByName("votes");
+  if (!sh) return json({ ok: false, error: "votes 탭이 없습니다." });
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim().toLowerCase(); });
+  var oi = headers.indexOf("option"), ni = headers.indexOf("name");
+  if (oi < 0 || ni < 0) return json({ ok: false, error: "votes 탭 머리글은 option, name 이어야 합니다." });
+
+  var last = sh.getLastRow();
+  var rows = last >= 2 ? sh.getRange(2, 1, last - 1, sh.getLastColumn()).getValues() : [];
+  var foundRow = -1;
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][oi]) === String(data.option) && String(rows[i][ni]) === String(data.name)) {
+      foundRow = i + 2;
+      break;
+    }
+  }
+  if (data.action === "addVote") {
+    if (foundRow < 0) {
+      var full = [];
+      for (var c = 0; c < headers.length; c++) full[c] = c === oi ? data.option : c === ni ? data.name : "";
+      sh.appendRow(full);
+    }
+  } else {
+    if (foundRow > 0) sh.deleteRow(foundRow);
+  }
+  return json({ ok: true });
 }
 
 // ----- 드라이브 폴더의 사진 목록 -----

@@ -16,7 +16,7 @@ const CLUB_DEFAULT = {
     "서울 브레멘은 합주를 사랑하는 사람들이 모인 음악 동아리입니다. 매주 모여 함께 연습하고, 무대를 만들고, 그 순간들을 기록합니다.",
 };
 
-let STATE = { rehearsals: [], songs: [], photos: [], members: [] };
+let STATE = { rehearsals: [], songs: [], photos: [], members: [], poll: [], votes: [] };
 let IS_ADMIN = false;
 
 // ---------------- 유틸 ----------------
@@ -141,6 +141,8 @@ function normalize(raw) {
       caption: p.caption, date: p.date,
     })),
     members: (raw.members || []).map((m) => ({ _row: m._row, name: m.name, part: m.part, joined: m.joined })),
+    poll: (raw.poll || []).map((p) => ({ _row: p._row, date: p.date, time: p.time, note: p.note })),
+    votes: (raw.votes || []).map((v) => ({ _row: v._row, option: v.option, name: v.name })),
   };
 }
 
@@ -504,8 +506,82 @@ function renderMembers() {
     </div>`).join("");
 }
 
+// ---- 투표 ----
+function getVoterName() {
+  let n = localStorage.getItem("sb_voter");
+  if (n) return n;
+  n = (prompt("투표에 사용할 이름을 입력하세요:") || "").trim();
+  if (n) localStorage.setItem("sb_voter", n);
+  return n;
+}
+
+async function toggleVote(key) {
+  if (!CFG.SCRIPT_URL) { alert("투표하려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  const name = getVoterName();
+  if (!name) return;
+  const voted = votersFor(key).includes(name);
+  try {
+    await postToSheet({ action: voted ? "removeVote" : "addVote", option: key, name });
+    await refresh();
+  } catch (e) { alert("투표 실패: " + e.message); }
+}
+
+function renderVoterBar() {
+  const el = document.getElementById("poll-voter");
+  const name = localStorage.getItem("sb_voter");
+  el.innerHTML = name
+    ? `투표 이름: <b>${escapeHtml(name)}</b> <button class="link-btn" id="voter-change">변경</button>`
+    : `<button class="link-btn" id="voter-set">투표할 이름 설정</button>`;
+  const set = document.getElementById("voter-set");
+  if (set) set.addEventListener("click", () => { getVoterName(); renderVoterBar(); });
+  const ch = document.getElementById("voter-change");
+  if (ch) ch.addEventListener("click", () => {
+    const n = (prompt("투표에 사용할 이름:", name) || "").trim();
+    if (n) { localStorage.setItem("sb_voter", n); renderVoterBar(); renderPoll(); }
+  });
+}
+
+function renderPoll() {
+  renderVoterBar();
+  const el = document.getElementById("poll");
+  const list = STATE.poll;
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">아직 투표 후보가 없습니다.${IS_ADMIN ? " 위의 <b>+ 후보 추가</b> 로 날짜를 올려보세요!" : ""}</div>`;
+    return;
+  }
+  const myName = localStorage.getItem("sb_voter");
+  const counts = list.map((o) => votersFor(pollKey(o)).length);
+  const max = Math.max(0, ...counts);
+
+  const sorted = [...list].sort((a, b) => votersFor(pollKey(b)).length - votersFor(pollKey(a)).length);
+  el.innerHTML = sorted.map((o) => {
+    const key = pollKey(o);
+    const voters = votersFor(key);
+    const voted = myName && voters.includes(myName);
+    const isTop = voters.length > 0 && voters.length === max;
+    const dd = fmtDate(o.date);
+    const chips = voters.map((v) => `<span class="avatar"><span class="dot">${escapeHtml(initials(v))}</span>${escapeHtml(v)}</span>`).join("");
+    return `<div class="poll-opt ${isTop ? "top" : ""}">
+      <div class="poll-opt-head">
+        <div class="date-badge"><span class="d">${dd.d}</span><span class="m">${dd.m}</span></div>
+        <div class="poll-opt-info">
+          <h3>${o.time ? escapeHtml(formatTime(o.time)) : "시간 미정"} ${isTop ? '<span class="tag-next">최다</span>' : ""}</h3>
+          ${o.note ? `<div class="poll-note">${escapeHtml(o.note)}</div>` : ""}
+        </div>
+        <div class="poll-count"><b>${voters.length}</b><span>표</span></div>
+      </div>
+      ${chips ? `<div class="poll-voters">${chips}</div>` : `<div class="poll-voters poll-empty-voters">아직 투표 없음</div>`}
+      <div class="poll-actions">
+        <button class="vote-btn ${voted ? "voted" : ""}" data-votekey="${escapeHtml(key)}">${voted ? "✓ 투표함 (취소)" : "🙋 가능해요"}</button>
+        ${adminCtrls("poll", o._row)}
+      </div>
+    </div>`;
+  }).join("");
+}
+
 function renderAll() {
   renderRehearsals();
+  renderPoll();
   renderSongs();
   renderMembers();
   renderPhotos();
@@ -553,7 +629,24 @@ const FORMS = {
       { name: "joined", label: "가입", type: "text", placeholder: "예: 2026" },
     ],
   },
+  poll: {
+    title: "투표 후보 일정",
+    tab: "poll",
+    fields: [
+      { name: "date", label: "날짜", type: "date", required: true },
+      { name: "time", label: "시간 (1시간 단위, 여러 개 선택 가능)", type: "timeslots" },
+      { name: "note", label: "메모", type: "text", placeholder: "예: 낙원상가 / 미정" },
+    ],
+  },
 };
+
+// 투표 후보의 고유 키 (날짜+시간 조합)
+function pollKey(o) {
+  return `${(o.date || "").trim()}|${(o.time || "").trim()}`;
+}
+function votersFor(key) {
+  return STATE.votes.filter((v) => v.option === key).map((v) => v.name).filter(Boolean);
+}
 
 // 드롭다운(다중 선택) 보기 옵션을 DB(시트)에서 가져오기
 function sourceOptions(source) {
@@ -564,7 +657,7 @@ function sourceOptions(source) {
 
 let modalCtx = null; // { type, row|null }
 
-const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos" };
+const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos", poll: "poll" };
 function findRecord(type, row) {
   return (STATE[TYPE_KEY[type]] || []).find((x) => String(x._row) === String(row));
 }
@@ -699,6 +792,8 @@ function bindItemControls() {
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
     }));
+  document.querySelectorAll("[data-votekey]").forEach((b) =>
+    b.addEventListener("click", (e) => { e.stopPropagation(); toggleVote(b.dataset.votekey); }));
   document.querySelectorAll("[data-delphoto]").forEach((b) =>
     b.addEventListener("click", async (e) => {
       e.stopPropagation();

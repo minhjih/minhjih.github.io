@@ -310,6 +310,56 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 }
 .song a.listen:hover { text-decoration: underline; }
 
+/* ===== Poll (일정 투표) ===== */
+.poll-voter { margin-bottom: 16px; font-size: 0.9rem; color: var(--text-dim); }
+.poll-voter b { color: var(--text); }
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent-2);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.88rem;
+  padding: 2px 4px;
+}
+.link-btn:hover { text-decoration: underline; }
+
+.poll-opt {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.poll-opt.top { border-color: var(--green); }
+.poll-opt-head { display: flex; align-items: center; gap: 14px; }
+.poll-opt-info { flex: 1; min-width: 0; }
+.poll-opt-info h3 { font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+.poll-note { font-size: 0.88rem; color: var(--text-dim); margin-top: 2px; }
+.poll-count {
+  text-align: center;
+  flex-shrink: 0;
+  min-width: 48px;
+}
+.poll-count b { display: block; font-size: 1.5rem; font-weight: 800; color: var(--green); line-height: 1; }
+.poll-count span { font-size: 0.72rem; color: var(--text-dim); }
+.poll-voters { margin-top: 12px; }
+.poll-empty-voters { font-size: 0.85rem; color: var(--text-dim); }
+.poll-actions { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.vote-btn {
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 8px 18px;
+  cursor: pointer;
+  border: 1px solid var(--accent-2);
+  background: transparent;
+  color: var(--accent-2);
+  transition: all 0.15s;
+}
+.vote-btn:hover { background: rgba(123, 108, 246, 0.12); }
+.vote-btn.voted { background: var(--green); border-color: var(--green); color: #0c1f14; }
+
 /* ===== Members ===== */
 .member-grid {
   display: grid;
