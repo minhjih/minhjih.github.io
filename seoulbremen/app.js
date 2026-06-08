@@ -161,7 +161,7 @@ async function loadData() {
             text.replace(/\s+/g, " ").slice(0, 60) + " …)"
         );
       }
-      LOAD_STATUS = { source: "script", error: "" };
+      LOAD_STATUS = { source: "script", error: raw._error || raw._photoError || "" };
       return normalize(raw);
     } catch (e) {
       LOAD_STATUS = { source: "demo", error: e.message };
@@ -195,13 +195,21 @@ function showLoadBanner() {
   const old = document.getElementById("load-banner");
   if (old) old.remove();
   const configured = CFG.SCRIPT_URL || CFG.SHEET_ID;
-  if (configured && LOAD_STATUS.source === "demo") {
+  if (!configured) return;
+  if (LOAD_STATUS.source === "demo") {
     const div = document.createElement("div");
     div.id = "load-banner";
     div.className = "load-banner";
     div.innerHTML =
       `⚠️ 구글 시트에 연결하지 못해 <b>데모 데이터</b>를 표시하고 있어요.` +
       (LOAD_STATUS.error ? `<br><small>${escapeHtml(LOAD_STATUS.error)}</small>` : "");
+    document.body.prepend(div);
+  } else if (LOAD_STATUS.error) {
+    // 연결은 됐지만 스크립트 내부에서 일부 오류가 난 경우
+    const div = document.createElement("div");
+    div.id = "load-banner";
+    div.className = "load-banner";
+    div.innerHTML = `⚠️ 일부 데이터를 불러오지 못했어요.<br><small>${escapeHtml(LOAD_STATUS.error)}</small>`;
     document.body.prepend(div);
   }
 }
