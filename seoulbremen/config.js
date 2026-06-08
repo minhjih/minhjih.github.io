@@ -22,6 +22,10 @@ window.SEOUL_BREMEN_CONFIG = {
   // [A] 웹에서 편집할 때 입력할 비밀번호 (앱스 스크립트의 EDIT_KEY와 똑같이!)
   EDIT_KEY: "",
 
+  // [선택] 사진 공유 드라이브 폴더 ID — 넣으면 갤러리에 "드라이브 폴더 열기" 링크가 생깁니다.
+  //   (실제 사진 업로드/표시는 앱스 스크립트의 PHOTOS_FOLDER_ID 로 처리됩니다.)
+  DRIVE_FOLDER_ID: "",
+
   // [B] 스프레드시트 ID (파일 1개) — 이 한 줄로 아래 4개 탭에 모두 접근합니다.
   //     주소 https://docs.google.com/spreadsheets/d/<여기가_ID>/edit
   //     ※ 앱스 스크립트(SCRIPT_URL)를 쓰면 비워둬도 됩니다.

@@ -137,7 +137,7 @@ function normalize(raw) {
       _row: s._row, title: s.title, artist: s.artist, status: s.status, key: s.key, link: s.link, notes: s.notes,
     })),
     photos: (raw.photos || []).map((p) => ({
-      _row: p._row, link: p.link || p.url || p.src, src: driveImageUrl(p.link || p.url || p.src),
+      _row: p._row, id: p.id, link: p.link || p.url || p.src, src: driveImageUrl(p.link || p.url || p.src),
       caption: p.caption, date: p.date,
     })),
     members: (raw.members || []).map((m) => ({ _row: m._row, name: m.name, part: m.part, joined: m.joined })),
@@ -183,6 +183,60 @@ async function postToSheet(payload) {
   const out = await res.json();
   if (!out.ok) throw new Error(out.error || "저장에 실패했습니다.");
   return out;
+}
+
+// 사진을 적당한 크기로 줄여 base64(JPEG)로 변환 — 업로드 용량/속도 개선
+function resizeImage(file, maxDim = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("파일을 읽을 수 없습니다."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("이미지를 열 수 없습니다."));
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxDim / Math.max(width, height));
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve({ base64: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadPhotos(files) {
+  if (!CFG.SCRIPT_URL) {
+    alert("사진 업로드 기능을 쓰려면 config.js 에 SCRIPT_URL(앱스 스크립트)을 연결해야 합니다. SETUP.md 참고.");
+    return;
+  }
+  const btn = document.getElementById("photo-upload-btn");
+  const orig = btn.textContent;
+  let done = 0;
+  try {
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) continue;
+      done++;
+      btn.textContent = `업로드 중... (${done}/${files.length})`;
+      const caption = files.length === 1
+        ? (prompt("사진 설명(선택):", file.name.replace(/\.[^.]+$/, "")) || "")
+        : file.name.replace(/\.[^.]+$/, "");
+      const { base64, mimeType } = await resizeImage(file);
+      await postToSheet({ action: "uploadPhoto", fileData: base64, mimeType, caption });
+    }
+    btn.textContent = "✅ 완료!";
+    await refresh();
+  } catch (err) {
+    alert("업로드 실패: " + err.message);
+  } finally {
+    setTimeout(() => (btn.textContent = orig), 1200);
+  }
 }
 
 // ---------------- 렌더링 ----------------
@@ -294,9 +348,8 @@ function renderPhotos() {
         ${p.date ? `<div class="pdate">${escapeHtml(p.date)}</div>` : ""}
         ${escapeHtml(p.caption || "")}
       </div>
-      ${IS_ADMIN && p._row ? `<div class="photo-ctrls">
-        <button class="ic-btn" data-edit="photo" data-row="${p._row}">✏️</button>
-        <button class="ic-btn danger" data-del="photo" data-row="${p._row}">🗑️</button>
+      ${IS_ADMIN && p.id ? `<div class="photo-ctrls">
+        <button class="ic-btn danger" data-delphoto="${escapeHtml(p.id)}">🗑️</button>
       </div>` : ""}
     </div>`).join("");
 
@@ -314,9 +367,31 @@ function renderPhotos() {
   });
 }
 
+function renderMembers() {
+  const el = document.getElementById("members");
+  const list = STATE.members;
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">아직 등록된 멤버가 없습니다.${IS_ADMIN ? " 위의 <b>+ 추가</b> 버튼으로 등록해보세요!" : ""}</div>`;
+    return;
+  }
+  el.innerHTML = list.map((m) => `
+    <div class="member">
+      <div class="member-dot">${escapeHtml(initials(m.name))}</div>
+      <div class="member-info">
+        <div class="member-name">${escapeHtml(m.name || "")}</div>
+        ${m.part ? `<div class="member-part">${escapeHtml(m.part)}</div>` : ""}
+      </div>
+      ${IS_ADMIN && m._row ? `<div class="item-ctrls">
+        <button class="ic-btn" data-edit="member" data-row="${m._row}">✏️</button>
+        <button class="ic-btn danger" data-del="member" data-row="${m._row}">🗑️</button>
+      </div>` : ""}
+    </div>`).join("");
+}
+
 function renderAll() {
   renderRehearsals();
   renderSongs();
+  renderMembers();
   renderPhotos();
   document.getElementById("stat-rehearsals").textContent = STATE.rehearsals.length;
   document.getElementById("stat-songs").textContent = STATE.songs.length;
@@ -335,8 +410,8 @@ const FORMS = {
       { name: "time", label: "시간 (1시간 단위, 여러 개 선택 가능)", type: "timeslots" },
       { name: "location", label: "장소", type: "text", placeholder: "예: 낙원상가 합주실 A룸" },
       { name: "address", label: "주소", type: "text", placeholder: "지도 검색용 (선택)" },
-      { name: "songs", label: "연습곡", type: "text", placeholder: "쉼표(,)로 구분", list: true },
-      { name: "attendees", label: "참석자", type: "text", placeholder: "쉼표(,)로 구분", list: true },
+      { name: "songs", label: "연습곡", type: "multiselect", source: "songs", extra: true, list: true },
+      { name: "attendees", label: "참석자", type: "multiselect", source: "members", extra: true, list: true },
       { name: "cost", label: "합주실 비용 (원)", type: "number", placeholder: "예: 40000 → 참석자 수로 1/N 자동 계산" },
       { name: "notes", label: "메모", type: "textarea" },
     ],
@@ -353,23 +428,29 @@ const FORMS = {
       { name: "notes", label: "메모", type: "textarea" },
     ],
   },
-  photo: {
-    title: "활동 사진",
-    tab: TABS.photos,
+  member: {
+    title: "멤버",
+    tab: TABS.members,
     fields: [
-      { name: "link", label: "구글 드라이브 공유 링크", type: "text", required: true,
-        placeholder: "drive.google.com/file/d/... 형태" },
-      { name: "caption", label: "설명", type: "text" },
-      { name: "date", label: "날짜", type: "date" },
+      { name: "name", label: "이름", type: "text", required: true },
+      { name: "part", label: "파트/역할", type: "text", placeholder: "예: 기타, 보컬, 드럼" },
+      { name: "joined", label: "가입", type: "text", placeholder: "예: 2026" },
     ],
   },
 };
 
+// 드롭다운(다중 선택) 보기 옵션을 DB(시트)에서 가져오기
+function sourceOptions(source) {
+  if (source === "members") return STATE.members.map((m) => m.name).filter(Boolean);
+  if (source === "songs") return STATE.songs.map((s) => s.title).filter(Boolean);
+  return [];
+}
+
 let modalCtx = null; // { type, row|null }
 
+const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos" };
 function findRecord(type, row) {
-  const key = type === "rehearsal" ? "rehearsals" : type === "song" ? "songs" : "photos";
-  return STATE[key].find((x) => String(x._row) === String(row));
+  return (STATE[TYPE_KEY[type]] || []).find((x) => String(x._row) === String(row));
 }
 
 function openModal(type, row) {
@@ -390,6 +471,23 @@ function openModal(type, row) {
     if (f.list && Array.isArray(val)) val = val.join(", ");
     val = val == null ? "" : String(val);
     const ev = escapeHtml(val);
+    if (f.type === "multiselect") {
+      const cur = existing ? (Array.isArray(existing[f.name]) ? existing[f.name] : splitList(existing[f.name])) : [];
+      const opts = sourceOptions(f.source);
+      const selected = new Set(cur);
+      const known = new Set(opts);
+      const extras = cur.filter((v) => !known.has(v)); // 목록에 없는 직접 입력 값
+      const boxes = opts.length
+        ? opts.map((o) => {
+            const on = selected.has(o);
+            return `<label class="slot ${on ? "on" : ""}"><input type="checkbox" name="${f.name}" value="${escapeHtml(o)}" ${on ? "checked" : ""}>${escapeHtml(o)}</label>`;
+          }).join("")
+        : `<div class="ms-empty">아직 ${f.source === "members" ? "멤버" : "곡"}가 없어요. 아래에 직접 입력하거나, 먼저 ${f.source === "members" ? "멤버" : "연습곡"}를 추가하세요.</div>`;
+      const extraInput = f.extra
+        ? `<input type="text" name="${f.name}__extra" class="ms-extra" placeholder="직접 추가 (쉼표로 구분)" value="${escapeHtml(extras.join(", "))}">`
+        : "";
+      return `<div class="fld"><span>${f.label}</span><div class="slot-grid ms-grid">${boxes}</div>${extraInput}</div>`;
+    }
     if (f.type === "timeslots") {
       const selected = new Set(parseSlots(val));
       const boxes = TIME_SLOTS.map((slot) => {
@@ -429,6 +527,11 @@ async function saveModal(e) {
     if (f.type === "timeslots") {
       const checked = Array.from(form.querySelectorAll(`input[name="${f.name}"]:checked`)).map((c) => c.value);
       values[f.name] = checked.join(", ");
+    } else if (f.type === "multiselect") {
+      const checked = Array.from(form.querySelectorAll(`input[type="checkbox"][name="${f.name}"]:checked`)).map((c) => c.value);
+      const extraEl = form.elements[`${f.name}__extra`];
+      const extras = extraEl ? splitList(extraEl.value) : [];
+      values[f.name] = [...checked, ...extras].join(", ");
     } else {
       values[f.name] = (form.elements[f.name].value || "").trim();
     }
@@ -477,6 +580,15 @@ function bindItemControls() {
       const spec = FORMS[type];
       try {
         await postToSheet({ action: "delete", tab: spec.tab, row: b.dataset.row });
+        await refresh();
+      } catch (err) { alert("삭제 실패: " + err.message); }
+    }));
+  document.querySelectorAll("[data-delphoto]").forEach((b) =>
+    b.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm("이 사진을 삭제할까요? (드라이브에서도 휴지통으로 이동)")) return;
+      try {
+        await postToSheet({ action: "deletePhoto", id: b.dataset.delphoto });
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
     }));
@@ -531,6 +643,15 @@ function setupStatic() {
   document.querySelectorAll(".add-btn").forEach((b) =>
     b.addEventListener("click", () => openModal(b.dataset.add, null)));
 
+  // 사진 업로드
+  const fileInput = document.getElementById("photo-file");
+  document.getElementById("photo-upload-btn").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ""; // 같은 파일 다시 선택 가능하도록 초기화
+    if (files.length) await uploadPhotos(files);
+  });
+
   // 모달
   document.getElementById("modal-form").addEventListener("submit", saveModal);
   document.getElementById("modal-close").addEventListener("click", closeModal);
@@ -543,6 +664,16 @@ function setupStatic() {
 (async function init() {
   setupStatic();
   renderHero(CLUB_DEFAULT, { rehearsals: 0, songs: 0, photos: 0 });
+
+  // 사진 올리기 버튼: 앱스 스크립트가 연결돼 있으면 누구나 사용 가능
+  if (CFG.SCRIPT_URL) document.getElementById("photo-upload-btn").hidden = false;
+  // 드라이브 폴더 바로가기 링크
+  if (CFG.DRIVE_FOLDER_ID) {
+    const fl = document.getElementById("folder-link");
+    fl.href = `https://drive.google.com/drive/folders/${CFG.DRIVE_FOLDER_ID}`;
+    fl.hidden = false;
+  }
+
   await refresh();
   // 세션에 관리자 기록이 있으면 복원
   if (CFG.SCRIPT_URL && sessionStorage.getItem("sb_admin") === "1") setAdmin(true);

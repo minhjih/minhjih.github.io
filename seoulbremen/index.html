@@ -19,6 +19,7 @@
       <div class="nav-links">
         <a href="#rehearsals-sec">합주 일정</a>
         <a href="#songs-sec">연습곡</a>
+        <a href="#members-sec">멤버</a>
         <a href="#gallery-sec">사진</a>
         <a href="#" id="admin-toggle">관리</a>
       </div>
@@ -59,14 +60,26 @@
       <div id="songs" class="song-grid"></div>
     </section>
 
+    <section id="members-sec">
+      <div class="section-head">
+        <h2>👥 멤버
+          <button class="add-btn" data-add="member" hidden>+ 추가</button>
+        </h2>
+        <div class="sub">함께하는 사람들 · 합주 참석자 목록의 기준이 됩니다</div>
+      </div>
+      <div id="members" class="member-grid"></div>
+    </section>
+
     <section id="gallery-sec">
       <div class="section-head">
         <h2>📷 활동 사진
-          <button class="add-btn" data-add="photo" hidden>+ 추가</button>
+          <button class="upload-btn" id="photo-upload-btn" hidden>📸 사진 올리기</button>
+          <a class="folder-link" id="folder-link" href="#" target="_blank" rel="noopener" hidden>📁 드라이브 폴더</a>
         </h2>
-        <div class="sub">함께한 순간들의 기록</div>
+        <div class="sub">함께한 순간들의 기록 · 누구나 사진을 올릴 수 있어요</div>
       </div>
       <div id="gallery" class="gallery"></div>
+      <input type="file" id="photo-file" accept="image/*" multiple hidden>
     </section>
   </main>
 
