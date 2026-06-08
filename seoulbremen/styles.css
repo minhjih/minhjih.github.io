@@ -453,6 +453,31 @@ footer a { color: var(--accent); text-decoration: none; }
   border-color: var(--accent-2);
 }
 .fld textarea { resize: vertical; }
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+.slot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: var(--text-dim);
+  user-select: none;
+}
+.slot input { width: auto; accent-color: var(--accent); margin: 0; }
+.slot:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(255, 184, 77, 0.12);
+  color: var(--text);
+  font-weight: 600;
+}
 .modal-actions {
   display: flex;
   justify-content: flex-end;

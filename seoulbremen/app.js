@@ -23,7 +23,7 @@ let IS_ADMIN = false;
 
 function splitList(str) {
   if (!str) return [];
-  return String(str).split(/[;,\n]/).map((s) => s.trim()).filter(Boolean);
+  return String(str).split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
 }
 
 function driveImageUrl(link, size = "w1200") {
@@ -54,6 +54,43 @@ function parseCost(v) {
 
 function won(n) {
   return Math.round(n).toLocaleString("ko-KR") + "원";
+}
+
+// 선택 가능한 1시간 단위 시간대 (09:00 ~ 24:00)
+const TIME_SLOTS = (() => {
+  const pad = (h) => String(h).padStart(2, "0");
+  const arr = [];
+  for (let h = 9; h <= 23; h++) arr.push(`${pad(h)}:00-${pad(h + 1)}:00`);
+  return arr;
+})();
+
+// 저장된 시간 문자열 → 슬롯 배열
+function parseSlots(str) {
+  if (!str) return [];
+  return String(str)
+    .split(",")
+    .map((s) => s.replace(/\s/g, ""))
+    .filter(Boolean);
+}
+
+// 연속된 슬롯을 범위로 합쳐서 보기 좋게 ("14:00-15:00,15:00-16:00" → "14:00 - 16:00")
+function formatTime(str) {
+  const slots = parseSlots(str)
+    .map((s) => {
+      const m = s.match(/(\d{1,2}:\d{2})-(\d{1,2}:\d{2})/);
+      return m ? { start: m[1], end: m[2] } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start.localeCompare(b.start));
+  if (!slots.length) return str || "";
+  const ranges = [];
+  let cur = { ...slots[0] };
+  for (let i = 1; i < slots.length; i++) {
+    if (slots[i].start === cur.end) cur.end = slots[i].end;
+    else { ranges.push(cur); cur = { ...slots[i] }; }
+  }
+  ranges.push(cur);
+  return ranges.map((r) => `${r.start} - ${r.end}`).join(", ");
 }
 
 function fmtDate(dateStr) {
@@ -206,7 +243,7 @@ function renderRehearsals() {
         <div class="info">
           <h3>${escapeHtml(r.location || "합주")} ${isNext ? '<span class="tag-next">다음 합주</span>' : ""}</h3>
           <div class="meta-row">
-            ${r.time ? `<span>🕒 ${escapeHtml(r.time)}</span>` : ""}
+            ${r.time ? `<span>🕒 ${escapeHtml(formatTime(r.time))}</span>` : ""}
             ${addr ? `<span>${addr}</span>` : ""}
           </div>
           ${songs ? `<div class="songs-line">${songs}</div>` : ""}
@@ -295,11 +332,11 @@ const FORMS = {
     tab: TABS.rehearsals,
     fields: [
       { name: "date", label: "날짜", type: "date", required: true },
-      { name: "time", label: "시간", type: "text", placeholder: "예: 14:00 - 18:00" },
+      { name: "time", label: "시간 (1시간 단위, 여러 개 선택 가능)", type: "timeslots" },
       { name: "location", label: "장소", type: "text", placeholder: "예: 낙원상가 합주실 A룸" },
       { name: "address", label: "주소", type: "text", placeholder: "지도 검색용 (선택)" },
-      { name: "songs", label: "연습곡", type: "text", placeholder: "세미콜론(;)으로 구분", list: true },
-      { name: "attendees", label: "참석자", type: "text", placeholder: "세미콜론(;)으로 구분", list: true },
+      { name: "songs", label: "연습곡", type: "text", placeholder: "쉼표(,)로 구분", list: true },
+      { name: "attendees", label: "참석자", type: "text", placeholder: "쉼표(,)로 구분", list: true },
       { name: "cost", label: "합주실 비용 (원)", type: "number", placeholder: "예: 40000 → 참석자 수로 1/N 자동 계산" },
       { name: "notes", label: "메모", type: "textarea" },
     ],
@@ -350,9 +387,18 @@ function openModal(type, row) {
   const form = document.getElementById("modal-form");
   form.innerHTML = spec.fields.map((f) => {
     let val = existing ? existing[f.name] : "";
-    if (f.list && Array.isArray(val)) val = val.join("; ");
+    if (f.list && Array.isArray(val)) val = val.join(", ");
     val = val == null ? "" : String(val);
     const ev = escapeHtml(val);
+    if (f.type === "timeslots") {
+      const selected = new Set(parseSlots(val));
+      const boxes = TIME_SLOTS.map((slot) => {
+        const on = selected.has(slot);
+        const lbl = slot.replace("-", " - ");
+        return `<label class="slot ${on ? "on" : ""}"><input type="checkbox" name="${f.name}" value="${slot}" ${on ? "checked" : ""}>${lbl}</label>`;
+      }).join("");
+      return `<div class="fld"><span>${f.label}</span><div class="slot-grid">${boxes}</div></div>`;
+    }
     if (f.type === "textarea") {
       return `<label class="fld"><span>${f.label}</span><textarea name="${f.name}" rows="2" placeholder="${f.placeholder || ""}">${ev}</textarea></label>`;
     }
@@ -380,7 +426,12 @@ async function saveModal(e) {
   const form = document.getElementById("modal-form");
   const values = {};
   spec.fields.forEach((f) => {
-    values[f.name] = (form.elements[f.name].value || "").trim();
+    if (f.type === "timeslots") {
+      const checked = Array.from(form.querySelectorAll(`input[name="${f.name}"]:checked`)).map((c) => c.value);
+      values[f.name] = checked.join(", ");
+    } else {
+      values[f.name] = (form.elements[f.name].value || "").trim();
+    }
   });
   const statusEl = document.getElementById("modal-status");
   statusEl.textContent = "저장 중...";
