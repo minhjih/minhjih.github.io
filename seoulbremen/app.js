@@ -333,6 +333,59 @@ function costBlock(r) {
   </div>`;
 }
 
+// 합주 일정 → 구글 캘린더 추가 링크
+function calendarUrl(r) {
+  const ymd = (r.date || "").replace(/-/g, "").slice(0, 8);
+  if (!/^\d{8}$/.test(ymd)) return "";
+
+  const dtStr = (baseYmd, minutes) => {
+    const dt = new Date(+baseYmd.slice(0, 4), +baseYmd.slice(4, 6) - 1, +baseYmd.slice(6, 8));
+    dt.setMinutes(minutes);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}${p(dt.getMonth() + 1)}${p(dt.getDate())}T${p(dt.getHours())}${p(dt.getMinutes())}00`;
+  };
+
+  const slots = parseSlots(r.time)
+    .map((s) => s.match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/))
+    .filter(Boolean);
+
+  let dates;
+  if (slots.length) {
+    let minStart = Infinity, maxEnd = -Infinity;
+    slots.forEach((m) => {
+      const s = +m[1] * 60 + +m[2];
+      const e = +m[3] * 60 + +m[4];
+      if (s < minStart) minStart = s;
+      if (e > maxEnd) maxEnd = e;
+    });
+    dates = `${dtStr(ymd, minStart)}/${dtStr(ymd, maxEnd)}`;
+  } else {
+    // 시간 미정 → 종일 일정 (종료일은 다음 날, 종료일 제외 규칙)
+    const next = dtStr(ymd, 24 * 60).slice(0, 8);
+    dates = `${ymd}/${next}`;
+  }
+
+  const details = [];
+  if ((r.songs || []).length) details.push("🎵 연습곡: " + r.songs.join(", "));
+  if ((r.attendees || []).length) details.push("👥 참석: " + r.attendees.join(", "));
+  const cost = parseCost(r.cost);
+  if (cost) {
+    const n = (r.attendees || []).length;
+    details.push("💰 비용: " + won(cost) + (n ? ` (1인당 ${won(cost / n)})` : ""));
+  }
+  if (r.notes) details.push(r.notes);
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: "서울 브레멘 합주" + (r.location ? ` @ ${r.location}` : ""),
+    dates,
+    details: details.join("\n"),
+    location: r.address || r.location || "",
+    ctz: "Asia/Seoul",
+  });
+  return "https://calendar.google.com/calendar/render?" + params.toString();
+}
+
 function renderRehearsals() {
   const el = document.getElementById("rehearsals");
   const list = STATE.rehearsals;
@@ -366,6 +419,7 @@ function renderRehearsals() {
           ${attendees ? `<div class="attendees"><div class="label">참석 (${r.attendees.length}명)</div>${attendees}</div>` : ""}
           ${costBlock(r)}
           ${r.notes ? `<div class="notes">${escapeHtml(r.notes)}</div>` : ""}
+          ${calendarUrl(r) ? `<div class="cal-row"><a class="cal-btn" href="${escapeHtml(calendarUrl(r))}" target="_blank" rel="noopener">📅 캘린더에 추가</a></div>` : ""}
           ${adminCtrls("rehearsal", r._row)}
         </div>
       </div>
