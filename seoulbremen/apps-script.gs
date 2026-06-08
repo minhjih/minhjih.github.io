@@ -92,6 +92,11 @@ function doPost(e) {
     if (data.action === "addComment") {
       return addComment(data);
     }
+    // 후보 날짜 일괄 저장 — 관리자만
+    if (data.action === "setPoll") {
+      if (data.key !== EDIT_KEY) return json({ ok: false, error: "비밀번호가 올바르지 않습니다." });
+      return setPoll(data);
+    }
     // 사진 업로드 — 업로드 비밀번호(또는 관리자 비밀번호) 필요
     if (data.action === "uploadPhoto") {
       if (data.key !== UPLOAD_KEY && data.key !== EDIT_KEY) {
@@ -168,6 +173,25 @@ function handleVote(data) {
     }
   } else {
     if (foundRow > 0) sh.deleteRow(foundRow);
+  }
+  return json({ ok: true });
+}
+
+// ----- 후보 날짜 일괄 저장 (poll 탭을 통째로 교체) -----
+function setPoll(data) {
+  var sh = getBook_().getSheetByName("poll");
+  if (!sh) return json({ ok: false, error: "poll 탭이 없습니다." });
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim().toLowerCase(); });
+  var di = headers.indexOf("date");
+  if (di < 0) return json({ ok: false, error: "poll 탭 머리글에 date 가 필요합니다." });
+  var last = sh.getLastRow();
+  if (last >= 2) sh.getRange(2, 1, last - 1, sh.getLastColumn()).clearContent();
+  var dates = data.dates || [];
+  for (var i = 0; i < dates.length; i++) {
+    var full = [];
+    for (var c = 0; c < headers.length; c++) full[c] = (c === di ? dates[i] : "");
+    sh.getRange(2 + i, 1, 1, headers.length).setValues([full]);
   }
   return json({ ok: true });
 }

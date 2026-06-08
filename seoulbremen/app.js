@@ -510,6 +510,7 @@ function renderMembers() {
 // ---- 투표 (날짜 달력) ----
 let POLL_VIEW = (() => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d; })();
 let POLL_EDIT = false; // 관리자: 후보 날짜 편집 모드
+let POLL_DRAFT = null;  // 편집 중인 후보 날짜 (저장 전까지 로컬에만 보관)
 
 function getVoterName() {
   let n = localStorage.getItem("sb_voter");
@@ -537,25 +538,50 @@ async function toggleVote(dateStr) {
   } catch (e) { alert("투표 실패: " + e.message); }
 }
 
-async function toggleCandidate(dateStr) {
-  if (!CFG.SCRIPT_URL) { alert("후보를 올리려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
-  const rows = candidateRows();
+// 후보 편집 시작: 현재 후보를 드래프트로 복사 (이후엔 로컬에서만 토글)
+function enterPollEdit() {
+  POLL_DRAFT = new Set(Object.keys(candidateRows()));
+  POLL_EDIT = true;
+  renderPoll();
+}
+function cancelPollEdit() {
+  POLL_EDIT = false;
+  POLL_DRAFT = null;
+  renderPoll();
+}
+// 날짜 토글 — 네트워크 없이 즉시 반영
+function toggleDraftDate(dateStr) {
+  if (!POLL_DRAFT) return;
+  if (POLL_DRAFT.has(dateStr)) POLL_DRAFT.delete(dateStr);
+  else POLL_DRAFT.add(dateStr);
+  renderPoll();
+}
+// 저장: 후보 전체를 한 번의 요청으로 전송
+async function savePollEdit() {
+  if (!CFG.SCRIPT_URL) { alert("후보를 저장하려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  const dates = Array.from(POLL_DRAFT || []).sort();
+  const btn = document.getElementById("poll-save");
+  if (btn) { btn.textContent = "저장 중..."; btn.disabled = true; }
   try {
-    if (rows[dateStr] != null) {
-      await postToSheet({ action: "delete", tab: "poll", row: rows[dateStr] });
-    } else {
-      await postToSheet({ action: "add", tab: "poll", values: { date: dateStr } });
-    }
+    await postToSheet({ action: "setPoll", dates });
+    POLL_EDIT = false;
+    POLL_DRAFT = null;
     await refresh();
-  } catch (e) { alert("후보 변경 실패: " + e.message); }
+  } catch (e) {
+    alert("후보 저장 실패: " + e.message + "\n(앱스 스크립트를 최신으로 '새 버전' 재배포했는지 확인하세요.)");
+    if (btn) { btn.textContent = "💾 저장"; btn.disabled = false; }
+  }
 }
 
 function renderVoterBar() {
   const el = document.getElementById("poll-voter");
   const name = localStorage.getItem("sb_voter");
-  const editBtn = IS_ADMIN && CFG.SCRIPT_URL
-    ? `<button class="link-btn ${POLL_EDIT ? "on" : ""}" id="poll-edit-toggle">${POLL_EDIT ? "✓ 후보 편집 중 (완료)" : "✏️ 후보 날짜 편집"}</button>`
-    : "";
+  let editBtn = "";
+  if (IS_ADMIN && CFG.SCRIPT_URL) {
+    editBtn = POLL_EDIT
+      ? `<button class="link-btn on" id="poll-save">💾 저장</button> <button class="link-btn" id="poll-cancel">취소</button>`
+      : `<button class="link-btn" id="poll-edit-toggle">✏️ 후보 날짜 편집</button>`;
+  }
   const namePart = name
     ? `투표 이름: <b>${escapeHtml(name)}</b> <button class="link-btn" id="voter-change">변경</button>`
     : `<button class="link-btn" id="voter-set">투표할 이름 설정</button>`;
@@ -569,7 +595,11 @@ function renderVoterBar() {
     if (n) { localStorage.setItem("sb_voter", n); renderPoll(); }
   });
   const et = document.getElementById("poll-edit-toggle");
-  if (et) et.addEventListener("click", () => { POLL_EDIT = !POLL_EDIT; renderPoll(); });
+  if (et) et.addEventListener("click", enterPollEdit);
+  const sv = document.getElementById("poll-save");
+  if (sv) sv.addEventListener("click", savePollEdit);
+  const cc = document.getElementById("poll-cancel");
+  if (cc) cc.addEventListener("click", cancelPollEdit);
 }
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"];
@@ -579,7 +609,7 @@ function renderPoll() {
   const el = document.getElementById("poll");
   const myName = localStorage.getItem("sb_voter");
   const cands = candidateRows();
-  const candSet = new Set(Object.keys(cands));
+  const candSet = POLL_EDIT && POLL_DRAFT ? POLL_DRAFT : new Set(Object.keys(cands));
   const y = POLL_VIEW.getFullYear(), mo = POLL_VIEW.getMonth();
   const pad = (n) => String(n).padStart(2, "0");
   const startDow = new Date(y, mo, 1).getDay();
@@ -612,7 +642,7 @@ function renderPoll() {
   }
 
   const hint = POLL_EDIT
-    ? `<div class="cal-hint">📌 후보로 넣을 날짜를 누르세요. 다시 누르면 후보에서 빠집니다.</div>`
+    ? `<div class="cal-hint">📌 후보 날짜를 눌러 선택하세요(여러 개 가능). 다 고른 뒤 위의 <b>💾 저장</b>을 누르면 한 번에 반영됩니다.</div>`
     : (candSet.size ? `<div class="cal-hint">가능한 날짜를 누르면 투표돼요. 같은 날을 다시 누르면 취소됩니다.</div>`
                     : `<div class="cal-hint">아직 후보 날짜가 없어요.${IS_ADMIN ? " ‘후보 날짜 편집’으로 날짜를 올려보세요." : " 관리자가 후보를 올리면 투표할 수 있어요."}</div>`);
 
@@ -627,7 +657,7 @@ function renderPoll() {
       ${cells}
     </div>
     ${hint}
-    ${renderPollSummary(candSet, cands)}
+    ${POLL_EDIT ? "" : renderPollSummary(candSet, cands)}
   `;
 
   document.getElementById("cal-prev").onclick = () => { POLL_VIEW = new Date(y, mo - 1, 1); renderPoll(); };
@@ -635,7 +665,7 @@ function renderPoll() {
   el.querySelectorAll("[data-votedate]").forEach((b) =>
     b.addEventListener("click", () => toggleVote(b.dataset.votedate)));
   el.querySelectorAll("[data-canddate]").forEach((b) =>
-    b.addEventListener("click", () => toggleCandidate(b.dataset.canddate)));
+    b.addEventListener("click", () => toggleDraftDate(b.dataset.canddate)));
 }
 
 // 후보 날짜별 득표 요약 (최다 강조)
