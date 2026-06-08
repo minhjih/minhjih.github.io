@@ -32,17 +32,45 @@ var UPLOAD_KEY = "bremen0101";
 // 사진을 보관할 공유 드라이브 "폴더" ID (없으면 photos 탭/데모로 동작)
 var PHOTOS_FOLDER_ID = "";
 
+// 스프레드시트 ID — 이 스크립트를 "시트 안에서" 만들지 않았다면(독립 프로젝트) 꼭 채우세요.
+//   시트 주소 https://docs.google.com/spreadsheets/d/<여기가_ID>/edit
+//   (시트의 [확장 프로그램]→[Apps Script]로 만들었으면 비워둬도 됩니다.)
+var SPREADSHEET_ID = "";
+
 // 시트 탭 이름 (사진은 폴더에서 가져오므로 photos 탭은 선택)
-var TABS = ["rehearsals", "songs", "members"];
+var TABS = ["rehearsals", "songs", "members", "poll"];
+
+// 스프레드시트 핸들 (독립 프로젝트면 openById, 시트에 붙어있으면 active)
+function getBook_() {
+  if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) throw new Error("스프레드시트를 찾을 수 없습니다. 위의 SPREADSHEET_ID 에 시트 ID를 넣으세요.");
+  return ss;
+}
 
 // ----- 읽기: GET 요청 시 모든 데이터를 JSON으로 반환 -----
 function doGet(e) {
-  var out = {};
-  TABS.forEach(function (name) {
-    out[name] = readSheet(name);
-  });
-  // 사진: 폴더가 설정돼 있으면 폴더에서, 아니면 photos 탭에서
-  out.photos = PHOTOS_FOLDER_ID ? listPhotos() : readSheet("photos");
+  var out = { rehearsals: [], songs: [], members: [], photos: [] };
+  try {
+    TABS.forEach(function (name) {
+      out[name] = readSheet(name);
+    });
+  } catch (err) {
+    out._error = String(err); // 시트 읽기 실패 원인을 함께 전달
+  }
+  // 사진: 폴더가 설정돼 있으면 폴더에서, 아니면 photos 탭에서 (실패해도 전체는 살림)
+  try {
+    out.photos = PHOTOS_FOLDER_ID ? listPhotos() : readSheet("photos");
+  } catch (errPhoto) {
+    out.photos = [];
+    out._photoError = String(errPhoto);
+  }
+  // 투표 기록
+  try {
+    out.votes = readSheet("votes");
+  } catch (errVote) {
+    out.votes = [];
+  }
   return json(out);
 }
 
@@ -56,6 +84,10 @@ function doPost(e) {
   }
 
   try {
+    // 일정 투표 — 누구나 가능 (이름으로 기록)
+    if (data.action === "addVote" || data.action === "removeVote") {
+      return handleVote(data);
+    }
     // 사진 업로드 — 업로드 비밀번호(또는 관리자 비밀번호) 필요
     if (data.action === "uploadPhoto") {
       if (data.key !== UPLOAD_KEY && data.key !== EDIT_KEY) {
@@ -74,7 +106,7 @@ function doPost(e) {
     if (data.key !== EDIT_KEY) return json({ ok: false, error: "비밀번호가 올바르지 않습니다." });
     if (TABS.indexOf(data.tab) === -1) return json({ ok: false, error: "알 수 없는 탭: " + data.tab });
 
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(data.tab);
+    var sheet = getBook_().getSheetByName(data.tab);
     if (!sheet) return json({ ok: false, error: "탭이 없습니다: " + data.tab });
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0]
       .map(function (h) { return String(h).trim().toLowerCase(); });
@@ -103,6 +135,37 @@ function doPost(e) {
   } catch (err) {
     return json({ ok: false, error: String(err) });
   }
+}
+
+// ----- 투표 추가/취소 -----
+function handleVote(data) {
+  if (!data.option || !data.name) return json({ ok: false, error: "option/name 이 필요합니다." });
+  var sh = getBook_().getSheetByName("votes");
+  if (!sh) return json({ ok: false, error: "votes 탭이 없습니다." });
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0]
+    .map(function (h) { return String(h).trim().toLowerCase(); });
+  var oi = headers.indexOf("option"), ni = headers.indexOf("name");
+  if (oi < 0 || ni < 0) return json({ ok: false, error: "votes 탭 머리글은 option, name 이어야 합니다." });
+
+  var last = sh.getLastRow();
+  var rows = last >= 2 ? sh.getRange(2, 1, last - 1, sh.getLastColumn()).getValues() : [];
+  var foundRow = -1;
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][oi]) === String(data.option) && String(rows[i][ni]) === String(data.name)) {
+      foundRow = i + 2;
+      break;
+    }
+  }
+  if (data.action === "addVote") {
+    if (foundRow < 0) {
+      var full = [];
+      for (var c = 0; c < headers.length; c++) full[c] = c === oi ? data.option : c === ni ? data.name : "";
+      sh.appendRow(full);
+    }
+  } else {
+    if (foundRow > 0) sh.deleteRow(foundRow);
+  }
+  return json({ ok: true });
 }
 
 // ----- 드라이브 폴더의 사진 목록 -----
@@ -144,7 +207,7 @@ function uploadPhoto(data) {
 
 // 시트를 [{헤더:값, _row: 시트행번호}, ...] 로 읽기
 function readSheet(name) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  var sheet = getBook_().getSheetByName(name);
   if (!sheet || sheet.getLastRow() < 2) return [];
   var values = sheet.getDataRange().getValues();
   var headers = values[0].map(function (h) { return String(h).trim().toLowerCase(); });

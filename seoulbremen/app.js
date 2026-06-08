@@ -16,7 +16,7 @@ const CLUB_DEFAULT = {
     "서울 브레멘은 합주를 사랑하는 사람들이 모인 음악 동아리입니다. 매주 모여 함께 연습하고, 무대를 만들고, 그 순간들을 기록합니다.",
 };
 
-let STATE = { rehearsals: [], songs: [], photos: [], members: [] };
+let STATE = { rehearsals: [], songs: [], photos: [], members: [], poll: [], votes: [] };
 let IS_ADMIN = false;
 
 // ---------------- 유틸 ----------------
@@ -141,17 +141,34 @@ function normalize(raw) {
       caption: p.caption, date: p.date,
     })),
     members: (raw.members || []).map((m) => ({ _row: m._row, name: m.name, part: m.part, joined: m.joined })),
+    poll: (raw.poll || []).map((p) => ({ _row: p._row, date: p.date, time: p.time, note: p.note })),
+    votes: (raw.votes || []).map((v) => ({ _row: v._row, option: v.option, name: v.name })),
   };
 }
+
+let LOAD_STATUS = { source: "demo", error: "" };
 
 async function loadData() {
   // 1) 앱스 스크립트
   if (CFG.SCRIPT_URL) {
     try {
       const res = await fetch(CFG.SCRIPT_URL);
-      const raw = await res.json();
+      const text = await res.text();
+      let raw;
+      try {
+        raw = JSON.parse(text);
+      } catch (e) {
+        throw new Error(
+          "스크립트가 JSON이 아닌 응답을 보냈습니다. 웹앱 접근 권한이 '모든 사용자'인지, URL이 /exec 로 끝나는지 확인하세요. (응답 앞부분: " +
+            text.replace(/\s+/g, " ").slice(0, 60) + " …)"
+        );
+      }
+      LOAD_STATUS = { source: "script", error: raw._error || raw._photoError || "" };
       return normalize(raw);
-    } catch (e) { console.error("앱스 스크립트 로딩 실패, 다음 방법으로 시도합니다.", e); }
+    } catch (e) {
+      LOAD_STATUS = { source: "demo", error: e.message };
+      console.error("앱스 스크립트 로딩 실패:", e);
+    }
   }
   // 2) 공개 시트
   if (CFG.SHEET_ID) {
@@ -162,12 +179,41 @@ async function loadData() {
         fetch(gvizUrl(TABS.photos)).then((r) => r.text()).then(parseGviz).catch(() => []),
         fetch(gvizUrl(TABS.members)).then((r) => r.text()).then(parseGviz).catch(() => []),
       ]);
+      LOAD_STATUS = { source: "sheet", error: "" };
       return normalize({ rehearsals: reh, songs: sng, photos: pho, members: mem });
-    } catch (e) { console.error("공개 시트 로딩 실패, data.json으로 대체합니다.", e); }
+    } catch (e) {
+      LOAD_STATUS = { source: "demo", error: e.message };
+      console.error("공개 시트 로딩 실패, data.json으로 대체합니다.", e);
+    }
   }
   // 3) 데모
+  if (!CFG.SCRIPT_URL && !CFG.SHEET_ID) LOAD_STATUS = { source: "demo", error: "" };
   const data = await fetch("data.json").then((r) => r.json());
   return normalize(data);
+}
+
+// 연동을 설정했는데 데모로 떨어졌을 때 화면에 원인을 표시
+function showLoadBanner() {
+  const old = document.getElementById("load-banner");
+  if (old) old.remove();
+  const configured = CFG.SCRIPT_URL || CFG.SHEET_ID;
+  if (!configured) return;
+  if (LOAD_STATUS.source === "demo") {
+    const div = document.createElement("div");
+    div.id = "load-banner";
+    div.className = "load-banner";
+    div.innerHTML =
+      `⚠️ 구글 시트에 연결하지 못해 <b>데모 데이터</b>를 표시하고 있어요.` +
+      (LOAD_STATUS.error ? `<br><small>${escapeHtml(LOAD_STATUS.error)}</small>` : "");
+    document.body.prepend(div);
+  } else if (LOAD_STATUS.error) {
+    // 연결은 됐지만 스크립트 내부에서 일부 오류가 난 경우
+    const div = document.createElement("div");
+    div.id = "load-banner";
+    div.className = "load-banner";
+    div.innerHTML = `⚠️ 일부 데이터를 불러오지 못했어요.<br><small>${escapeHtml(LOAD_STATUS.error)}</small>`;
+    document.body.prepend(div);
+  }
 }
 
 // ---------------- 쓰기 (앱스 스크립트) ----------------
@@ -289,6 +335,59 @@ function costBlock(r) {
   </div>`;
 }
 
+// 합주 일정 → 구글 캘린더 추가 링크
+function calendarUrl(r) {
+  const ymd = (r.date || "").replace(/-/g, "").slice(0, 8);
+  if (!/^\d{8}$/.test(ymd)) return "";
+
+  const dtStr = (baseYmd, minutes) => {
+    const dt = new Date(+baseYmd.slice(0, 4), +baseYmd.slice(4, 6) - 1, +baseYmd.slice(6, 8));
+    dt.setMinutes(minutes);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}${p(dt.getMonth() + 1)}${p(dt.getDate())}T${p(dt.getHours())}${p(dt.getMinutes())}00`;
+  };
+
+  const slots = parseSlots(r.time)
+    .map((s) => s.match(/(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})/))
+    .filter(Boolean);
+
+  let dates;
+  if (slots.length) {
+    let minStart = Infinity, maxEnd = -Infinity;
+    slots.forEach((m) => {
+      const s = +m[1] * 60 + +m[2];
+      const e = +m[3] * 60 + +m[4];
+      if (s < minStart) minStart = s;
+      if (e > maxEnd) maxEnd = e;
+    });
+    dates = `${dtStr(ymd, minStart)}/${dtStr(ymd, maxEnd)}`;
+  } else {
+    // 시간 미정 → 종일 일정 (종료일은 다음 날, 종료일 제외 규칙)
+    const next = dtStr(ymd, 24 * 60).slice(0, 8);
+    dates = `${ymd}/${next}`;
+  }
+
+  const details = [];
+  if ((r.songs || []).length) details.push("🎵 연습곡: " + r.songs.join(", "));
+  if ((r.attendees || []).length) details.push("👥 참석: " + r.attendees.join(", "));
+  const cost = parseCost(r.cost);
+  if (cost) {
+    const n = (r.attendees || []).length;
+    details.push("💰 비용: " + won(cost) + (n ? ` (1인당 ${won(cost / n)})` : ""));
+  }
+  if (r.notes) details.push(r.notes);
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: "서울 브레멘 합주" + (r.location ? ` @ ${r.location}` : ""),
+    dates,
+    details: details.join("\n"),
+    location: r.address || r.location || "",
+    ctz: "Asia/Seoul",
+  });
+  return "https://calendar.google.com/calendar/render?" + params.toString();
+}
+
 function renderRehearsals() {
   const el = document.getElementById("rehearsals");
   const list = STATE.rehearsals;
@@ -322,6 +421,7 @@ function renderRehearsals() {
           ${attendees ? `<div class="attendees"><div class="label">참석 (${r.attendees.length}명)</div>${attendees}</div>` : ""}
           ${costBlock(r)}
           ${r.notes ? `<div class="notes">${escapeHtml(r.notes)}</div>` : ""}
+          ${calendarUrl(r) ? `<div class="cal-row"><a class="cal-btn" href="${escapeHtml(calendarUrl(r))}" target="_blank" rel="noopener">📅 캘린더에 추가</a></div>` : ""}
           ${adminCtrls("rehearsal", r._row)}
         </div>
       </div>
@@ -406,8 +506,82 @@ function renderMembers() {
     </div>`).join("");
 }
 
+// ---- 투표 ----
+function getVoterName() {
+  let n = localStorage.getItem("sb_voter");
+  if (n) return n;
+  n = (prompt("투표에 사용할 이름을 입력하세요:") || "").trim();
+  if (n) localStorage.setItem("sb_voter", n);
+  return n;
+}
+
+async function toggleVote(key) {
+  if (!CFG.SCRIPT_URL) { alert("투표하려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  const name = getVoterName();
+  if (!name) return;
+  const voted = votersFor(key).includes(name);
+  try {
+    await postToSheet({ action: voted ? "removeVote" : "addVote", option: key, name });
+    await refresh();
+  } catch (e) { alert("투표 실패: " + e.message); }
+}
+
+function renderVoterBar() {
+  const el = document.getElementById("poll-voter");
+  const name = localStorage.getItem("sb_voter");
+  el.innerHTML = name
+    ? `투표 이름: <b>${escapeHtml(name)}</b> <button class="link-btn" id="voter-change">변경</button>`
+    : `<button class="link-btn" id="voter-set">투표할 이름 설정</button>`;
+  const set = document.getElementById("voter-set");
+  if (set) set.addEventListener("click", () => { getVoterName(); renderVoterBar(); });
+  const ch = document.getElementById("voter-change");
+  if (ch) ch.addEventListener("click", () => {
+    const n = (prompt("투표에 사용할 이름:", name) || "").trim();
+    if (n) { localStorage.setItem("sb_voter", n); renderVoterBar(); renderPoll(); }
+  });
+}
+
+function renderPoll() {
+  renderVoterBar();
+  const el = document.getElementById("poll");
+  const list = STATE.poll;
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">아직 투표 후보가 없습니다.${IS_ADMIN ? " 위의 <b>+ 후보 추가</b> 로 날짜를 올려보세요!" : ""}</div>`;
+    return;
+  }
+  const myName = localStorage.getItem("sb_voter");
+  const counts = list.map((o) => votersFor(pollKey(o)).length);
+  const max = Math.max(0, ...counts);
+
+  const sorted = [...list].sort((a, b) => votersFor(pollKey(b)).length - votersFor(pollKey(a)).length);
+  el.innerHTML = sorted.map((o) => {
+    const key = pollKey(o);
+    const voters = votersFor(key);
+    const voted = myName && voters.includes(myName);
+    const isTop = voters.length > 0 && voters.length === max;
+    const dd = fmtDate(o.date);
+    const chips = voters.map((v) => `<span class="avatar"><span class="dot">${escapeHtml(initials(v))}</span>${escapeHtml(v)}</span>`).join("");
+    return `<div class="poll-opt ${isTop ? "top" : ""}">
+      <div class="poll-opt-head">
+        <div class="date-badge"><span class="d">${dd.d}</span><span class="m">${dd.m}</span></div>
+        <div class="poll-opt-info">
+          <h3>${o.time ? escapeHtml(formatTime(o.time)) : "시간 미정"} ${isTop ? '<span class="tag-next">최다</span>' : ""}</h3>
+          ${o.note ? `<div class="poll-note">${escapeHtml(o.note)}</div>` : ""}
+        </div>
+        <div class="poll-count"><b>${voters.length}</b><span>표</span></div>
+      </div>
+      ${chips ? `<div class="poll-voters">${chips}</div>` : `<div class="poll-voters poll-empty-voters">아직 투표 없음</div>`}
+      <div class="poll-actions">
+        <button class="vote-btn ${voted ? "voted" : ""}" data-votekey="${escapeHtml(key)}">${voted ? "✓ 투표함 (취소)" : "🙋 가능해요"}</button>
+        ${adminCtrls("poll", o._row)}
+      </div>
+    </div>`;
+  }).join("");
+}
+
 function renderAll() {
   renderRehearsals();
+  renderPoll();
   renderSongs();
   renderMembers();
   renderPhotos();
@@ -455,7 +629,24 @@ const FORMS = {
       { name: "joined", label: "가입", type: "text", placeholder: "예: 2026" },
     ],
   },
+  poll: {
+    title: "투표 후보 일정",
+    tab: "poll",
+    fields: [
+      { name: "date", label: "날짜", type: "date", required: true },
+      { name: "time", label: "시간 (1시간 단위, 여러 개 선택 가능)", type: "timeslots" },
+      { name: "note", label: "메모", type: "text", placeholder: "예: 낙원상가 / 미정" },
+    ],
+  },
 };
+
+// 투표 후보의 고유 키 (날짜+시간 조합)
+function pollKey(o) {
+  return `${(o.date || "").trim()}|${(o.time || "").trim()}`;
+}
+function votersFor(key) {
+  return STATE.votes.filter((v) => v.option === key).map((v) => v.name).filter(Boolean);
+}
 
 // 드롭다운(다중 선택) 보기 옵션을 DB(시트)에서 가져오기
 function sourceOptions(source) {
@@ -466,7 +657,7 @@ function sourceOptions(source) {
 
 let modalCtx = null; // { type, row|null }
 
-const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos" };
+const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos", poll: "poll" };
 function findRecord(type, row) {
   return (STATE[TYPE_KEY[type]] || []).find((x) => String(x._row) === String(row));
 }
@@ -601,6 +792,8 @@ function bindItemControls() {
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
     }));
+  document.querySelectorAll("[data-votekey]").forEach((b) =>
+    b.addEventListener("click", (e) => { e.stopPropagation(); toggleVote(b.dataset.votekey); }));
   document.querySelectorAll("[data-delphoto]").forEach((b) =>
     b.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -644,6 +837,7 @@ function toggleAdmin(e) {
 async function refresh() {
   STATE = await loadData();
   renderAll();
+  showLoadBanner();
 }
 
 // ---------------- 초기화 ----------------
