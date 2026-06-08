@@ -1,0 +1,46 @@
+{
+  "club": {
+    "name": "서울 브레멘",
+    "tagline": "함께 모여 소리를 내는 사람들",
+    "description": "서울 브레멘은 합주를 사랑하는 사람들이 모인 음악 동아리입니다. 매주 모여 함께 연습하고, 무대를 만들고, 그 순간들을 기록합니다.",
+    "founded": "2026",
+    "contact": "jhchoi0226@snu.ac.kr"
+  },
+  "members": [
+    { "name": "최진형", "part": "리더 / 기타", "joined": "2026" }
+  ],
+  "rehearsals": [
+    {
+      "date": "2026-06-14",
+      "time": "14:00 - 18:00",
+      "location": "낙원상가 합주실 A룸",
+      "address": "서울 종로구 삼일대로 428",
+      "songs": ["첫 합주곡 정하기", "사운드 체크"],
+      "attendees": ["최진형"],
+      "cost": 40000,
+      "notes": "첫 합주! 악기 챙겨오기 🎸"
+    }
+  ],
+  "songs": [
+    {
+      "title": "예시 곡",
+      "artist": "아티스트",
+      "status": "연습중",
+      "key": "C",
+      "link": "",
+      "notes": "여기에 곡에 대한 메모를 적어주세요."
+    }
+  ],
+  "photos": [
+    {
+      "src": "https://picsum.photos/seed/seoulbremen1/800/600",
+      "caption": "첫 합주 (예시 사진)",
+      "date": "2026-06-14"
+    },
+    {
+      "src": "https://picsum.photos/seed/seoulbremen2/800/600",
+      "caption": "합주실에서 (예시 사진)",
+      "date": "2026-06-14"
+    }
+  ]
+}
