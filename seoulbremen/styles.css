@@ -30,6 +30,18 @@ a { color: inherit; }
 
 .container { max-width: 980px; margin: 0 auto; padding: 0 20px; }
 
+/* ===== Load banner ===== */
+.load-banner {
+  background: linear-gradient(90deg, rgba(240, 112, 154, 0.18), rgba(240, 112, 154, 0.08));
+  border-bottom: 1px solid rgba(240, 112, 154, 0.4);
+  color: var(--text);
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.load-banner small { color: var(--text-dim); word-break: break-all; }
+
 /* ===== Nav ===== */
 .nav {
   position: sticky;

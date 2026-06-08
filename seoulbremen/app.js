@@ -144,14 +144,29 @@ function normalize(raw) {
   };
 }
 
+let LOAD_STATUS = { source: "demo", error: "" };
+
 async function loadData() {
   // 1) 앱스 스크립트
   if (CFG.SCRIPT_URL) {
     try {
       const res = await fetch(CFG.SCRIPT_URL);
-      const raw = await res.json();
+      const text = await res.text();
+      let raw;
+      try {
+        raw = JSON.parse(text);
+      } catch (e) {
+        throw new Error(
+          "스크립트가 JSON이 아닌 응답을 보냈습니다. 웹앱 접근 권한이 '모든 사용자'인지, URL이 /exec 로 끝나는지 확인하세요. (응답 앞부분: " +
+            text.replace(/\s+/g, " ").slice(0, 60) + " …)"
+        );
+      }
+      LOAD_STATUS = { source: "script", error: "" };
       return normalize(raw);
-    } catch (e) { console.error("앱스 스크립트 로딩 실패, 다음 방법으로 시도합니다.", e); }
+    } catch (e) {
+      LOAD_STATUS = { source: "demo", error: e.message };
+      console.error("앱스 스크립트 로딩 실패:", e);
+    }
   }
   // 2) 공개 시트
   if (CFG.SHEET_ID) {
@@ -162,12 +177,33 @@ async function loadData() {
         fetch(gvizUrl(TABS.photos)).then((r) => r.text()).then(parseGviz).catch(() => []),
         fetch(gvizUrl(TABS.members)).then((r) => r.text()).then(parseGviz).catch(() => []),
       ]);
+      LOAD_STATUS = { source: "sheet", error: "" };
       return normalize({ rehearsals: reh, songs: sng, photos: pho, members: mem });
-    } catch (e) { console.error("공개 시트 로딩 실패, data.json으로 대체합니다.", e); }
+    } catch (e) {
+      LOAD_STATUS = { source: "demo", error: e.message };
+      console.error("공개 시트 로딩 실패, data.json으로 대체합니다.", e);
+    }
   }
   // 3) 데모
+  if (!CFG.SCRIPT_URL && !CFG.SHEET_ID) LOAD_STATUS = { source: "demo", error: "" };
   const data = await fetch("data.json").then((r) => r.json());
   return normalize(data);
+}
+
+// 연동을 설정했는데 데모로 떨어졌을 때 화면에 원인을 표시
+function showLoadBanner() {
+  const old = document.getElementById("load-banner");
+  if (old) old.remove();
+  const configured = CFG.SCRIPT_URL || CFG.SHEET_ID;
+  if (configured && LOAD_STATUS.source === "demo") {
+    const div = document.createElement("div");
+    div.id = "load-banner";
+    div.className = "load-banner";
+    div.innerHTML =
+      `⚠️ 구글 시트에 연결하지 못해 <b>데모 데이터</b>를 표시하고 있어요.` +
+      (LOAD_STATUS.error ? `<br><small>${escapeHtml(LOAD_STATUS.error)}</small>` : "");
+    document.body.prepend(div);
+  }
 }
 
 // ---------------- 쓰기 (앱스 스크립트) ----------------
@@ -644,6 +680,7 @@ function toggleAdmin(e) {
 async function refresh() {
   STATE = await loadData();
   renderAll();
+  showLoadBanner();
 }
 
 // ---------------- 초기화 ----------------
