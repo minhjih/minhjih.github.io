@@ -422,7 +422,6 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 .comment .ic-btn { position: absolute; top: 10px; right: 10px; }
 .comment-empty { font-size: 0.88rem; color: var(--text-dim); }
 
-.poll-opt {
 .poll-voter b { color: var(--text); }
 .link-btn {
   background: none;
