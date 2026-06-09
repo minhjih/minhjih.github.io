@@ -1,13 +1,14 @@
 // ===================================================================
 //  서울 브레멘 - 데이터 로딩 / 렌더링 / 편집
-//  데이터 출처 우선순위:
-//   1) SCRIPT_URL  : 앱스 스크립트 (읽기+쓰기)
-//   2) SHEET_ID    : 공개 구글 시트 (읽기 전용)
-//   3) data.json   : 데모 데이터
+//  데이터: Supabase(Postgres REST) — 합주/연습곡/멤버/투표/댓글
+//  사진:   구글 드라이브 + 앱스 스크립트(SCRIPT_URL)
+//  Supabase 미설정 시 data.json(데모)로 동작
 // ===================================================================
 
 const CFG = window.SEOUL_BREMEN_CONFIG || {};
-const TABS = CFG.TABS || { rehearsals: "rehearsals", songs: "songs", photos: "photos", members: "members" };
+const TABS = { rehearsals: "rehearsals", songs: "songs", photos: "photos", members: "members" };
+const SB = { url: (CFG.SUPABASE_URL || "").replace(/\/$/, ""), key: CFG.SUPABASE_ANON_KEY || "" };
+const SB_READY = !!(SB.url && SB.key);
 
 const CLUB_DEFAULT = {
   name: "서울 브레멘",
@@ -108,88 +109,104 @@ function isUpcoming(dateStr) {
   return dt >= today;
 }
 
-// ---------------- 데이터 로드 ----------------
+// ---------------- Supabase REST 헬퍼 ----------------
 
-function gvizUrl(tab) {
-  return `https://docs.google.com/spreadsheets/d/${CFG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tab)}`;
+function sbHeaders(extra) {
+  return Object.assign(
+    { apikey: SB.key, Authorization: "Bearer " + SB.key, "Content-Type": "application/json" },
+    extra || {}
+  );
 }
-function parseGviz(text) {
-  const json = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-  const cols = json.table.cols.map((c) => (c.label || "").trim().toLowerCase());
-  return (json.table.rows || []).map((row) => {
-    const obj = {};
-    (row.c || []).forEach((cell, i) => {
-      if (!cols[i]) return;
-      obj[cols[i]] = cell ? (cell.f != null ? cell.f : cell.v) : "";
-    });
-    return obj;
+async function sbErr(res) {
+  try { const j = await res.json(); return j.message || j.hint || j.error || ("HTTP " + res.status); }
+  catch (e) { return "HTTP " + res.status; }
+}
+async function sbSelect(table) {
+  const res = await fetch(`${SB.url}/rest/v1/${table}?select=*`, { headers: sbHeaders() });
+  if (!res.ok) throw new Error(`${table} 읽기 실패: ${await sbErr(res)}`);
+  return res.json();
+}
+async function sbInsert(table, body) {
+  const res = await fetch(`${SB.url}/rest/v1/${table}`, {
+    method: "POST", headers: sbHeaders({ Prefer: "return=minimal" }), body: JSON.stringify(body),
   });
+  if (!res.ok) throw new Error(await sbErr(res));
 }
+async function sbUpdate(table, id, body) {
+  const res = await fetch(`${SB.url}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH", headers: sbHeaders({ Prefer: "return=minimal" }), body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await sbErr(res));
+}
+async function sbDelete(table, id) {
+  const res = await fetch(`${SB.url}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE", headers: sbHeaders(),
+  });
+  if (!res.ok) throw new Error(await sbErr(res));
+}
+async function sbDeleteWhere(table, query) {
+  const res = await fetch(`${SB.url}/rest/v1/${table}?${query}`, { method: "DELETE", headers: sbHeaders() });
+  if (!res.ok) throw new Error(await sbErr(res));
+}
+
+// ---------------- 데이터 로드 ----------------
 
 function normalize(raw) {
   return {
     rehearsals: (raw.rehearsals || []).map((r) => ({
-      _row: r._row, date: r.date, time: r.time, location: r.location, address: r.address,
+      _row: r.id, date: r.date, time: r.time, location: r.location, address: r.address,
       songs: splitList(r.songs), attendees: splitList(r.attendees),
       cost: parseCost(r.cost), notes: r.notes,
     })),
     songs: (raw.songs || []).map((s) => ({
-      _row: s._row, title: s.title, artist: s.artist, status: s.status, key: s.key, link: s.link, notes: s.notes,
+      _row: s.id, title: s.title, artist: s.artist, status: s.status, key: s.key, link: s.link, notes: s.notes,
     })),
     photos: (raw.photos || []).map((p) => ({
       _row: p._row, id: p.id, link: p.link || p.url || p.src, src: driveImageUrl(p.link || p.url || p.src),
       caption: p.caption, date: p.date,
     })),
-    members: (raw.members || []).map((m) => ({ _row: m._row, name: m.name, part: m.part, joined: m.joined })),
-    poll: (raw.poll || []).map((p) => ({ _row: p._row, date: p.date, time: p.time, note: p.note })),
-    votes: (raw.votes || []).map((v) => ({ _row: v._row, option: v.option, name: v.name })),
-    comments: (raw.comments || []).map((c) => ({ _row: c._row, name: c.name, comment: c.comment, time: c.time })),
+    members: (raw.members || []).map((m) => ({ _row: m.id, name: m.name, part: m.part, joined: m.joined })),
+    poll: (raw.poll || []).map((p) => ({ _row: p.id, date: p.date })),
+    votes: (raw.votes || []).map((v) => ({ _row: v.id, option: v.option, name: v.name })),
+    comments: (raw.comments || []).map((c) => ({ _row: c.id, name: c.name, comment: c.comment, time: c.time })),
   };
 }
 
 let LOAD_STATUS = { source: "demo", error: "" };
 
+// 사진은 구글 드라이브(앱스 스크립트)에서 가져옴
+async function loadPhotos() {
+  if (!CFG.SCRIPT_URL) return [];
+  try {
+    const res = await fetch(CFG.SCRIPT_URL);
+    const j = await res.json();
+    return j.photos || [];
+  } catch (e) {
+    console.error("사진(드라이브) 로딩 실패:", e);
+    return [];
+  }
+}
+
 async function loadData() {
-  // 1) 앱스 스크립트
-  if (CFG.SCRIPT_URL) {
+  if (SB_READY) {
     try {
-      const res = await fetch(CFG.SCRIPT_URL);
-      const text = await res.text();
-      let raw;
-      try {
-        raw = JSON.parse(text);
-      } catch (e) {
-        throw new Error(
-          "스크립트가 JSON이 아닌 응답을 보냈습니다. 웹앱 접근 권한이 '모든 사용자'인지, URL이 /exec 로 끝나는지 확인하세요. (응답 앞부분: " +
-            text.replace(/\s+/g, " ").slice(0, 60) + " …)"
-        );
-      }
-      LOAD_STATUS = { source: "script", error: raw._error || raw._photoError || "" };
-      return normalize(raw);
-    } catch (e) {
-      LOAD_STATUS = { source: "demo", error: e.message };
-      console.error("앱스 스크립트 로딩 실패:", e);
-    }
-  }
-  // 2) 공개 시트
-  if (CFG.SHEET_ID) {
-    try {
-      const [reh, sng, pho, mem] = await Promise.all([
-        fetch(gvizUrl(TABS.rehearsals)).then((r) => r.text()).then(parseGviz).catch(() => []),
-        fetch(gvizUrl(TABS.songs)).then((r) => r.text()).then(parseGviz).catch(() => []),
-        fetch(gvizUrl(TABS.photos)).then((r) => r.text()).then(parseGviz).catch(() => []),
-        fetch(gvizUrl(TABS.members)).then((r) => r.text()).then(parseGviz).catch(() => []),
+      const [reh, sng, mem, poll, votes, comments, photos] = await Promise.all([
+        sbSelect("rehearsals"), sbSelect("songs"), sbSelect("members"),
+        sbSelect("poll"), sbSelect("votes"), sbSelect("comments"),
+        loadPhotos(),
       ]);
-      LOAD_STATUS = { source: "sheet", error: "" };
-      return normalize({ rehearsals: reh, songs: sng, photos: pho, members: mem });
+      LOAD_STATUS = { source: "supabase", error: "" };
+      return normalize({ rehearsals: reh, songs: sng, members: mem, poll, votes, comments, photos });
     } catch (e) {
       LOAD_STATUS = { source: "demo", error: e.message };
-      console.error("공개 시트 로딩 실패, data.json으로 대체합니다.", e);
+      console.error("Supabase 로딩 실패, data.json으로 대체합니다.", e);
     }
+  } else {
+    LOAD_STATUS = { source: "demo", error: "" };
   }
-  // 3) 데모
-  if (!CFG.SCRIPT_URL && !CFG.SHEET_ID) LOAD_STATUS = { source: "demo", error: "" };
+  // 데모 (Supabase 미설정 또는 실패 시)
   const data = await fetch("data.json").then((r) => r.json());
+  // 데모 데이터에는 id가 없으므로 인덱스로 _row 부여 (편집은 비활성)
   return normalize(data);
 }
 
@@ -197,14 +214,13 @@ async function loadData() {
 function showLoadBanner() {
   const old = document.getElementById("load-banner");
   if (old) old.remove();
-  const configured = CFG.SCRIPT_URL || CFG.SHEET_ID;
-  if (!configured) return;
+  if (!SB_READY) return;
   if (LOAD_STATUS.source === "demo") {
     const div = document.createElement("div");
     div.id = "load-banner";
     div.className = "load-banner";
     div.innerHTML =
-      `⚠️ 구글 시트에 연결하지 못해 <b>데모 데이터</b>를 표시하고 있어요.` +
+      `⚠️ Supabase에 연결하지 못해 <b>데모 데이터</b>를 표시하고 있어요.` +
       (LOAD_STATUS.error ? `<br><small>${escapeHtml(LOAD_STATUS.error)}</small>` : "");
     document.body.prepend(div);
   } else if (LOAD_STATUS.error) {
@@ -528,12 +544,16 @@ function candidateRows() {
 }
 
 async function toggleVote(dateStr) {
-  if (!CFG.SCRIPT_URL) { alert("투표하려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  if (!SB_READY) { alert("투표하려면 Supabase 연결이 필요합니다."); return; }
   const name = getVoterName();
   if (!name) return;
   const voted = votersFor(dateStr).includes(name);
   try {
-    await postToSheet({ action: voted ? "removeVote" : "addVote", option: dateStr, name });
+    if (voted) {
+      await sbDeleteWhere("votes", `option=eq.${encodeURIComponent(dateStr)}&name=eq.${encodeURIComponent(name)}`);
+    } else {
+      await sbInsert("votes", { option: dateStr, name });
+    }
     await refresh();
   } catch (e) { alert("투표 실패: " + e.message); }
 }
@@ -558,17 +578,18 @@ function toggleDraftDate(dateStr) {
 }
 // 저장: 후보 전체를 한 번의 요청으로 전송
 async function savePollEdit() {
-  if (!CFG.SCRIPT_URL) { alert("후보를 저장하려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  if (!SB_READY) { alert("후보를 저장하려면 Supabase 연결이 필요합니다."); return; }
   const dates = Array.from(POLL_DRAFT || []).sort();
   const btn = document.getElementById("poll-save");
   if (btn) { btn.textContent = "저장 중..."; btn.disabled = true; }
   try {
-    await postToSheet({ action: "setPoll", dates });
+    await sbDeleteWhere("poll", "id=gte.0");          // 기존 후보 전체 삭제
+    if (dates.length) await sbInsert("poll", dates.map((d) => ({ date: d }))); // 새 후보 일괄 삽입
     POLL_EDIT = false;
     POLL_DRAFT = null;
     await refresh();
   } catch (e) {
-    alert("후보 저장 실패: " + e.message + "\n(앱스 스크립트를 최신으로 '새 버전' 재배포했는지 확인하세요.)");
+    alert("후보 저장 실패: " + e.message);
     if (btn) { btn.textContent = "💾 저장"; btn.disabled = false; }
   }
 }
@@ -577,7 +598,7 @@ function renderVoterBar() {
   const el = document.getElementById("poll-voter");
   const name = localStorage.getItem("sb_voter");
   let editBtn = "";
-  if (IS_ADMIN && CFG.SCRIPT_URL) {
+  if (IS_ADMIN && SB_READY) {
     editBtn = POLL_EDIT
       ? `<button class="link-btn on" id="poll-save">💾 저장</button> <button class="link-btn" id="poll-cancel">취소</button>`
       : `<button class="link-btn" id="poll-edit-toggle">✏️ 후보 날짜 편집</button>`;
@@ -697,8 +718,14 @@ function renderPollSummary(candSet, cands) {
   return `<div class="poll-summary"><div class="poll-summary-title">📊 후보별 현황</div>${rows}</div>`;
 }
 
+function nowStr() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 async function submitComment() {
-  if (!CFG.SCRIPT_URL) { alert("댓글을 남기려면 스크립트(SCRIPT_URL) 연결이 필요합니다."); return; }
+  if (!SB_READY) { alert("댓글을 남기려면 Supabase 연결이 필요합니다."); return; }
   const input = document.getElementById("comment-input");
   const text = (input.value || "").trim();
   if (!text) return;
@@ -707,7 +734,7 @@ async function submitComment() {
   const btn = document.getElementById("comment-submit");
   btn.disabled = true;
   try {
-    await postToSheet({ action: "addComment", name, comment: text });
+    await sbInsert("comments", { name, comment: text, time: nowStr() });
     input.value = "";
     await refresh();
   } catch (e) { alert("댓글 등록 실패: " + e.message); }
@@ -743,7 +770,7 @@ function renderComments() {
     b.addEventListener("click", async () => {
       if (!confirm("이 댓글을 삭제할까요?")) return;
       try {
-        await postToSheet({ action: "delete", tab: "comments", row: b.dataset.delcomment });
+        await sbDelete("comments", b.dataset.delcomment);
         await refresh();
       } catch (e) { alert("삭제 실패: " + e.message); }
     }));
@@ -834,8 +861,8 @@ function findRecord(type, row) {
 }
 
 function openModal(type, row) {
-  if (!CFG.SCRIPT_URL) {
-    alert("편집하려면 config.js 에 SCRIPT_URL(앱스 스크립트 주소)을 설정해야 합니다. SETUP.md 를 참고하세요.");
+  if (!SB_READY) {
+    alert("편집하려면 config.js 에 SUPABASE_URL / SUPABASE_ANON_KEY 를 설정해야 합니다. SETUP.md 를 참고하세요.");
     return;
   }
   const spec = FORMS[type];
@@ -919,12 +946,8 @@ async function saveModal(e) {
   const statusEl = document.getElementById("modal-status");
   statusEl.textContent = "저장 중...";
   try {
-    await postToSheet({
-      action: modalCtx.row ? "update" : "add",
-      tab: spec.tab,
-      row: modalCtx.row || undefined,
-      values,
-    });
+    if (modalCtx.row) await sbUpdate(spec.tab, modalCtx.row, values);
+    else await sbInsert(spec.tab, values);
     statusEl.textContent = "✅ 저장되었습니다!";
     await refresh();
     setTimeout(closeModal, 500);
@@ -940,7 +963,7 @@ async function deleteItem() {
   const statusEl = document.getElementById("modal-status");
   statusEl.textContent = "삭제 중...";
   try {
-    await postToSheet({ action: "delete", tab: spec.tab, row: modalCtx.row });
+    await sbDelete(spec.tab, modalCtx.row);
     statusEl.textContent = "🗑️ 삭제되었습니다.";
     await refresh();
     setTimeout(closeModal, 500);
@@ -959,7 +982,7 @@ function bindItemControls() {
       const type = b.dataset.del;
       const spec = FORMS[type];
       try {
-        await postToSheet({ action: "delete", tab: spec.tab, row: b.dataset.row });
+        await sbDelete(spec.tab, b.dataset.row);
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
     }));
@@ -989,8 +1012,8 @@ function setAdmin(on) {
 function toggleAdmin(e) {
   e.preventDefault();
   if (IS_ADMIN) { setAdmin(false); sessionStorage.removeItem("sb_admin"); return; }
-  if (!CFG.SCRIPT_URL) {
-    alert("편집 기능을 쓰려면 먼저 config.js 에 앱스 스크립트(SCRIPT_URL)를 연결하세요. 자세한 내용은 SETUP.md 참고.");
+  if (!SB_READY) {
+    alert("편집 기능을 쓰려면 먼저 config.js 에 Supabase(SUPABASE_URL / SUPABASE_ANON_KEY)를 연결하세요. 자세한 내용은 SETUP.md 참고.");
     return;
   }
   const pw = prompt("편집 비밀번호를 입력하세요:");
@@ -1059,5 +1082,5 @@ function setupStatic() {
 
   await refresh();
   // 세션에 관리자 기록이 있으면 복원
-  if (CFG.SCRIPT_URL && sessionStorage.getItem("sb_admin") === "1") setAdmin(true);
+  if (SB_READY && sessionStorage.getItem("sb_admin") === "1") setAdmin(true);
 })();
