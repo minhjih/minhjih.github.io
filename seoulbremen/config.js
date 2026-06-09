@@ -12,7 +12,7 @@ window.SEOUL_BREMEN_CONFIG = {
   SUPABASE_URL: "https://gppwawgyoysctikujmed.supabase.co",
   //  ↓ "anon" "public" 키를 붙여넣으세요 (브라우저 노출 OK, RLS로 보호).
   //    ⚠️ service_role 키는 절대 넣지 마세요!
-  SUPABASE_ANON_KEY: "",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwcHdhd2d5b3lzY3Rpa3VqbWVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NzUyMjQsImV4cCI6MjA5NjU1MTIyNH0.l-MEqQwjCzOnPkmI90-eYydEYgGTdhg_-J5vVX4glXQ",
 
   // 관리자 편집 비밀번호 (합주/연습곡/멤버/후보 추가·수정·삭제 시 화면에서 입력)
   EDIT_KEY: "bremen0101",
