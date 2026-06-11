@@ -492,6 +492,15 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 }
 .vote-btn:hover { background: rgba(123, 108, 246, 0.12); }
 .vote-btn.voted { background: var(--green); border-color: var(--green); color: #0c1f14; }
+.vote-badge {
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: rgba(77, 213, 138, 0.15);
+  color: var(--green);
+  white-space: nowrap;
+}
 
 /* ===== Members ===== */
 .member-grid {
