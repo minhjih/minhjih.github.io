@@ -335,8 +335,9 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 .cal-nav .link-btn { font-size: 1.3rem; padding: 2px 10px; }
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
 }
 .cal-dow {
   text-align: center;
@@ -350,6 +351,8 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 .cal-cell {
   position: relative;
   aspect-ratio: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--bg-card);
@@ -438,34 +441,39 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: 14px;
+  padding: 13px 15px;
+  margin-bottom: 10px;
 }
 .poll-opt.top { border-color: var(--green); }
-.poll-opt-head { display: flex; align-items: center; gap: 14px; }
-.poll-opt-info { flex: 1; min-width: 0; }
-.poll-opt-info h3 { font-size: 1.05rem; display: flex; align-items: center; gap: 8px; }
+.poll-opt-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.poll-opt-info { flex: 1; min-width: 90px; }
+.poll-opt-info h3 { font-size: 1rem; display: flex; align-items: center; gap: 8px; }
 .poll-note { font-size: 0.88rem; color: var(--text-dim); margin-top: 2px; }
 .poll-count {
   text-align: center;
   flex-shrink: 0;
-  min-width: 48px;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
 }
-.poll-count b { display: block; font-size: 1.5rem; font-weight: 800; color: var(--green); line-height: 1; }
+.poll-count b { font-size: 1.2rem; font-weight: 800; color: var(--green); line-height: 1; }
 .poll-count span { font-size: 0.72rem; color: var(--text-dim); }
-.poll-voters { margin-top: 12px; }
+.poll-voters { margin-top: 10px; display: flex; flex-wrap: wrap; }
+.poll-voters .avatar { font-size: 0.78rem; padding: 2px 8px 2px 3px; margin: 0 5px 5px 0; }
+.poll-voters .avatar .dot { width: 18px; height: 18px; font-size: 0.62rem; }
 .poll-empty-voters { font-size: 0.85rem; color: var(--text-dim); }
 .poll-actions { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .vote-btn {
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   border-radius: 999px;
-  padding: 8px 18px;
+  padding: 6px 14px;
   cursor: pointer;
   border: 1px solid var(--accent-2);
   background: transparent;
   color: var(--accent-2);
   transition: all 0.15s;
+  white-space: nowrap;
 }
 .vote-btn:hover { background: rgba(123, 108, 246, 0.12); }
 .vote-btn.voted { background: var(--green); border-color: var(--green); color: #0c1f14; }
@@ -762,4 +770,14 @@ footer a { color: var(--accent); text-decoration: none; }
 @media (max-width: 600px) {
   .hero { padding: 56px 0 40px; }
   section { padding: 40px 0; }
+
+  /* 일정 투표 - 모바일 */
+  .cal-grid { gap: 4px; }
+  .cal-cell { border-radius: 8px; }
+  .cal-cell .cal-d { font-size: 0.78rem; }
+  .cal-cell .cal-cnt { font-size: 0.58rem; min-width: 14px; padding: 0 3px; }
+  .cal-nav { gap: 12px; }
+  .poll-opt { padding: 11px 12px; }
+  .poll-opt-info h3 { font-size: 0.95rem; }
+  .poll-count b { font-size: 1.1rem; }
 }

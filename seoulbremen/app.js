@@ -710,9 +710,9 @@ function renderPollSummary(candSet, cands) {
           <h3>${escapeHtml(label)} ${isTop ? '<span class="tag-next">최다</span>' : ""}</h3>
         </div>
         <div class="poll-count"><b>${voters.length}</b><span>표</span></div>
+        ${!POLL_EDIT ? `<button class="vote-btn ${voted ? "voted" : ""}" data-votedate="${escapeHtml(ds)}">${voted ? "✓ 취소" : "🙋 가능"}</button>` : ""}
       </div>
-      ${chips ? `<div class="poll-voters">${chips}</div>` : `<div class="poll-voters poll-empty-voters">아직 투표 없음</div>`}
-      ${!POLL_EDIT ? `<div class="poll-actions"><button class="vote-btn ${voted ? "voted" : ""}" data-votedate="${escapeHtml(ds)}">${voted ? "✓ 투표함 (취소)" : "🙋 가능해요"}</button></div>` : ""}
+      ${chips ? `<div class="poll-voters">${chips}</div>` : ``}
     </div>`;
   }).join("");
   return `<div class="poll-summary"><div class="poll-summary-title">📊 후보별 현황</div>${rows}</div>`;
