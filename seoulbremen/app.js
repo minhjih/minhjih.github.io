@@ -102,6 +102,20 @@ function fmtDate(dateStr) {
   return { d: String(dt.getDate()), m: `${months[dt.getMonth()]} ${dt.getFullYear()}` };
 }
 
+// 어떤 날짜 표현이든 'YYYY-MM-DD' 로 정규화 (달력 키와 매칭용)
+function ymd(v) {
+  if (!v) return "";
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  const dt = new Date(s);
+  if (!isNaN(dt)) {
+    const p = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${p(dt.getMonth() + 1)}-${p(dt.getDate())}`;
+  }
+  return s;
+}
+
 function isUpcoming(dateStr) {
   const dt = new Date(dateStr);
   if (isNaN(dt)) return false;
@@ -540,7 +554,7 @@ function getVoterName() {
 // 후보 날짜 목록 / 날짜→poll행 매핑
 function candidateRows() {
   const map = {};
-  STATE.poll.forEach((p) => { if (p.date) map[String(p.date).trim()] = p._row; });
+  STATE.poll.forEach((p) => { const d = ymd(p.date); if (d) map[d] = p._row; });
   return map;
 }
 
@@ -550,7 +564,7 @@ function myVotedActualSet() {
   const s = new Set();
   if (!myName) return s;
   STATE.poll.forEach((p) => {
-    const d = String(p.date || "").trim();
+    const d = ymd(p.date);
     if (d && votersFor(d).includes(myName)) s.add(d);
   });
   return s;
@@ -713,12 +727,12 @@ function renderPoll() {
     ? `<div class="cal-hint">📌 후보 날짜를 눌러 선택하세요(여러 개 가능). 다 고른 뒤 위의 <b>💾 저장</b>을 누르면 한 번에 반영됩니다.</div>`
     : (candSet.size ? `<div class="cal-hint">가능한 날짜를 모두 눌러 선택한 뒤 <b>💾 투표 저장</b>을 누르세요.</div>`
                     : `<div class="cal-hint">아직 후보 날짜가 없어요.${IS_ADMIN ? " ‘후보 날짜 편집’으로 날짜를 올려보세요." : " 관리자가 후보를 올리면 투표할 수 있어요."}</div>`);
-  const saveBar = (!POLL_EDIT && dirty)
+  const saveBar = (!POLL_EDIT && candSet.size)
     ? `<div class="vote-save-bar">
-         <span>선택을 저장하면 반영됩니다.</span>
+         <span>${dirty ? "선택을 저장하면 반영됩니다." : "가능한 날짜를 누른 뒤 저장하세요."}</span>
          <span class="vsb-actions">
-           <button class="link-btn" id="myvote-cancel">취소</button>
-           <button class="btn btn-primary" id="myvote-save">💾 투표 저장</button>
+           ${dirty ? `<button class="link-btn" id="myvote-cancel">취소</button>` : ""}
+           <button class="btn btn-primary" id="myvote-save" ${dirty ? "" : "disabled"}>💾 투표 저장</button>
          </span>
        </div>`
     : "";
