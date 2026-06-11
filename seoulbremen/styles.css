@@ -391,6 +391,21 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 .cal-cell .cal-cand-dot { font-size: 0.6rem; color: var(--accent); }
 .cal-hint { margin: 14px 0; font-size: 0.85rem; color: var(--text-dim); text-align: center; }
 
+.vote-save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: rgba(123, 108, 246, 0.12);
+  border: 1px solid var(--accent-2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 14px 0;
+  font-size: 0.9rem;
+}
+.vote-save-bar .vsb-actions { display: flex; align-items: center; gap: 12px; }
+
 .poll-summary { margin-top: 20px; }
 .poll-summary-title { font-weight: 700; margin-bottom: 12px; }
 
