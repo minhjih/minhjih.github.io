@@ -527,6 +527,7 @@ function renderMembers() {
 let POLL_VIEW = (() => { const d = new Date(); d.setDate(1); d.setHours(0, 0, 0, 0); return d; })();
 let POLL_EDIT = false; // 관리자: 후보 날짜 편집 모드
 let POLL_DRAFT = null;  // 편집 중인 후보 날짜 (저장 전까지 로컬에만 보관)
+let VOTE_DRAFT = null;  // 멤버 본인 투표 선택 (저장 전까지 로컬에만 보관)
 
 function getVoterName() {
   let n = localStorage.getItem("sb_voter");
@@ -543,19 +544,63 @@ function candidateRows() {
   return map;
 }
 
-async function toggleVote(dateStr) {
+// 내가 지금 '저장된' 상태로 투표한 후보 날짜들
+function myVotedActualSet() {
+  const myName = localStorage.getItem("sb_voter");
+  const s = new Set();
+  if (!myName) return s;
+  STATE.poll.forEach((p) => {
+    const d = String(p.date || "").trim();
+    if (d && votersFor(d).includes(myName)) s.add(d);
+  });
+  return s;
+}
+// 화면에 표시할 내 선택 (드래프트 중이면 드래프트, 아니면 저장된 값)
+function effectiveMineSet() {
+  return VOTE_DRAFT !== null ? VOTE_DRAFT : myVotedActualSet();
+}
+
+// 날짜 클릭 → 내 투표 선택 토글 (네트워크 없이 로컬)
+function toggleMyVote(ds) {
   if (!SB_READY) { alert("투표하려면 Supabase 연결이 필요합니다."); return; }
   const name = getVoterName();
   if (!name) return;
-  const voted = votersFor(dateStr).includes(name);
+  if (VOTE_DRAFT === null) VOTE_DRAFT = myVotedActualSet();
+  if (VOTE_DRAFT.has(ds)) VOTE_DRAFT.delete(ds);
+  else VOTE_DRAFT.add(ds);
+  renderPoll();
+}
+
+function cancelMyVotes() {
+  VOTE_DRAFT = null;
+  renderPoll();
+}
+
+// 저장: 선택한 날짜와 저장된 투표의 차이만 한 번에 반영
+async function saveMyVotes() {
+  if (!SB_READY) { alert("투표하려면 Supabase 연결이 필요합니다."); return; }
+  const name = localStorage.getItem("sb_voter");
+  if (!name || VOTE_DRAFT === null) return;
+  const actual = myVotedActualSet();
+  const draft = VOTE_DRAFT;
+  const toAdd = [...draft].filter((d) => !actual.has(d));
+  const toRemove = [...actual].filter((d) => !draft.has(d));
+  const btn = document.getElementById("myvote-save");
+  if (btn) { btn.textContent = "저장 중..."; btn.disabled = true; }
   try {
-    if (voted) {
-      await sbDeleteWhere("votes", `option=eq.${encodeURIComponent(dateStr)}&name=eq.${encodeURIComponent(name)}`);
-    } else {
-      await sbInsert("votes", { option: dateStr, name });
+    const jobs = [];
+    if (toAdd.length) jobs.push(sbInsert("votes", toAdd.map((d) => ({ option: d, name }))));
+    if (toRemove.length) {
+      const list = toRemove.map(encodeURIComponent).join(",");
+      jobs.push(sbDeleteWhere("votes", `name=eq.${encodeURIComponent(name)}&option=in.(${list})`));
     }
+    await Promise.all(jobs);
+    VOTE_DRAFT = null;
     await refresh();
-  } catch (e) { alert("투표 실패: " + e.message); }
+  } catch (e) {
+    alert("투표 저장 실패: " + e.message);
+    if (btn) { btn.textContent = "💾 투표 저장"; btn.disabled = false; }
+  }
 }
 
 // 후보 편집 시작: 현재 후보를 드래프트로 복사 (이후엔 로컬에서만 토글)
@@ -631,6 +676,7 @@ function renderPoll() {
   const myName = localStorage.getItem("sb_voter");
   const cands = candidateRows();
   const candSet = POLL_EDIT && POLL_DRAFT ? POLL_DRAFT : new Set(Object.keys(cands));
+  const mineSet = effectiveMineSet();
   const y = POLL_VIEW.getFullYear(), mo = POLL_VIEW.getMonth();
   const pad = (n) => String(n).padStart(2, "0");
   const startDow = new Date(y, mo, 1).getDay();
@@ -643,7 +689,7 @@ function renderPoll() {
     const dow = new Date(y, mo, d).getDay();
     const isCand = candSet.has(ds);
     const cnt = votersFor(ds).length;
-    const mine = myName && votersFor(ds).includes(myName);
+    const mine = mineSet.has(ds);
     let cls = `cal-cell dow${dow}`;
     let attr = "";
     if (POLL_EDIT) {
@@ -662,10 +708,20 @@ function renderPoll() {
     </button>`;
   }
 
+  const dirty = VOTE_DRAFT !== null;
   const hint = POLL_EDIT
     ? `<div class="cal-hint">📌 후보 날짜를 눌러 선택하세요(여러 개 가능). 다 고른 뒤 위의 <b>💾 저장</b>을 누르면 한 번에 반영됩니다.</div>`
-    : (candSet.size ? `<div class="cal-hint">가능한 날짜를 누르면 투표돼요. 같은 날을 다시 누르면 취소됩니다.</div>`
+    : (candSet.size ? `<div class="cal-hint">가능한 날짜를 모두 눌러 선택한 뒤 <b>💾 투표 저장</b>을 누르세요.</div>`
                     : `<div class="cal-hint">아직 후보 날짜가 없어요.${IS_ADMIN ? " ‘후보 날짜 편집’으로 날짜를 올려보세요." : " 관리자가 후보를 올리면 투표할 수 있어요."}</div>`);
+  const saveBar = (!POLL_EDIT && dirty)
+    ? `<div class="vote-save-bar">
+         <span>선택을 저장하면 반영됩니다.</span>
+         <span class="vsb-actions">
+           <button class="link-btn" id="myvote-cancel">취소</button>
+           <button class="btn btn-primary" id="myvote-save">💾 투표 저장</button>
+         </span>
+       </div>`
+    : "";
 
   el.innerHTML = `
     <div class="cal-nav">
@@ -678,31 +734,35 @@ function renderPoll() {
       ${cells}
     </div>
     ${hint}
-    ${POLL_EDIT ? "" : renderPollSummary(candSet, cands)}
+    ${saveBar}
+    ${POLL_EDIT ? "" : renderPollSummary(candSet, mineSet)}
   `;
 
   document.getElementById("cal-prev").onclick = () => { POLL_VIEW = new Date(y, mo - 1, 1); renderPoll(); };
   document.getElementById("cal-next").onclick = () => { POLL_VIEW = new Date(y, mo + 1, 1); renderPoll(); };
   el.querySelectorAll("[data-votedate]").forEach((b) =>
-    b.addEventListener("click", () => toggleVote(b.dataset.votedate)));
+    b.addEventListener("click", () => toggleMyVote(b.dataset.votedate)));
   el.querySelectorAll("[data-canddate]").forEach((b) =>
     b.addEventListener("click", () => toggleDraftDate(b.dataset.canddate)));
+  const ms = document.getElementById("myvote-save");
+  if (ms) ms.addEventListener("click", saveMyVotes);
+  const mc = document.getElementById("myvote-cancel");
+  if (mc) mc.addEventListener("click", cancelMyVotes);
 }
 
 // 후보 날짜별 득표 요약 (최다 강조)
-function renderPollSummary(candSet, cands) {
+function renderPollSummary(candSet, mineSet) {
   const dates = [...candSet];
   if (!dates.length) return "";
   const counts = dates.map((d) => votersFor(d).length);
   const max = Math.max(0, ...counts);
-  const myName = localStorage.getItem("sb_voter");
   const sorted = dates.sort((a, b) => votersFor(b).length - votersFor(a).length || a.localeCompare(b));
   const rows = sorted.map((ds) => {
     const voters = votersFor(ds);
     const isTop = voters.length > 0 && voters.length === max;
     const dt = new Date(ds);
     const label = isNaN(dt) ? ds : `${dt.getMonth() + 1}월 ${dt.getDate()}일 (${DOW[dt.getDay()]})`;
-    const voted = myName && voters.includes(myName);
+    const voted = mineSet.has(ds);
     const chips = voters.map((v) => `<span class="avatar"><span class="dot">${escapeHtml(initials(v))}</span>${escapeHtml(v)}</span>`).join("");
     return `<div class="poll-opt ${isTop ? "top" : ""}">
       <div class="poll-opt-head">
@@ -986,8 +1046,6 @@ function bindItemControls() {
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
     }));
-  document.querySelectorAll("[data-votekey]").forEach((b) =>
-    b.addEventListener("click", (e) => { e.stopPropagation(); toggleVote(b.dataset.votekey); }));
   document.querySelectorAll("[data-delphoto]").forEach((b) =>
     b.addEventListener("click", async (e) => {
       e.stopPropagation();
