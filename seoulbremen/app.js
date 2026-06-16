@@ -46,6 +46,26 @@ function escapeHtml(str) {
 
 function initials(name) { return name ? name.trim().slice(-2) : "?"; }
 
+// 합주 파트(세션) 구성
+const PARTS = ["드럼", "베이스", "기타1", "기타2", "키보드", "보컬", "보조마이크"];
+// "드럼:김주희, 베이스:최재현" → { 드럼:"김주희", ... }
+function parseSessions(str) {
+  const map = {};
+  if (!str) return map;
+  String(str).split(",").forEach((tok) => {
+    const i = tok.indexOf(":");
+    if (i > 0) {
+      const part = tok.slice(0, i).trim();
+      const who = tok.slice(i + 1).trim();
+      if (part && who) map[part] = who;
+    }
+  });
+  return map;
+}
+function stringifySessions(map) {
+  return PARTS.filter((p) => map[p]).map((p) => `${p}:${map[p]}`).join(", ");
+}
+
 // "40,000원", "40000", 40000 → 숫자 40000 (없으면 0)
 function parseCost(v) {
   if (v == null || v === "") return 0;
@@ -174,6 +194,7 @@ function normalize(raw) {
     })),
     songs: (raw.songs || []).map((s) => ({
       _row: s.id, title: s.title, artist: s.artist, status: s.status, key: s.key, link: s.link, notes: s.notes,
+      sessions: s.sessions || "",
     })),
     photos: (raw.photos || []).map((p) => ({
       _row: p._row, id: p.id, link: p.link || p.url || p.src, src: driveImageUrl(p.link || p.url || p.src),
@@ -476,6 +497,16 @@ function renderSongs() {
         <span class="status ${statusClass}">${escapeHtml(status)}</span>
       </div>
       ${s.key ? `<div class="song-meta">Key: <span class="key">${escapeHtml(s.key)}</span></div>` : ""}
+      ${(() => {
+        const map = parseSessions(s.sessions);
+        const filled = PARTS.filter((p) => map[p]);
+        if (!filled.length) return "";
+        return `<div class="song-sessions">${filled.map((p) => {
+          const who = map[p];
+          const muted = who === "필요없음";
+          return `<span class="sess-chip${muted ? " muted" : ""}"><em>${escapeHtml(p)}</em> ${escapeHtml(who)}</span>`;
+        }).join("")}</div>`;
+      })()}
       ${s.notes ? `<div class="song-notes">${escapeHtml(s.notes)}</div>` : ""}
       ${s.link ? `<a class="listen" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">▶ 들어보기</a>` : ""}
       ${adminCtrls("song", s._row)}
@@ -889,6 +920,7 @@ const FORMS = {
       { name: "status", label: "상태", type: "select", options: ["후보", "연습중", "완성"] },
       { name: "key", label: "Key", type: "text", placeholder: "예: C, Am" },
       { name: "link", label: "링크", type: "text", placeholder: "유튜브/음원 링크 (선택)" },
+      { name: "sessions", label: "세션 (파트별 담당)", type: "sessions" },
       { name: "notes", label: "메모", type: "textarea" },
     ],
   },
@@ -969,6 +1001,20 @@ function openModal(type, row) {
         : "";
       return `<div class="fld"><span>${f.label}</span><div class="slot-grid ms-grid">${boxes}</div>${extraInput}</div>`;
     }
+    if (f.type === "sessions") {
+      const map = parseSessions(existing ? existing.sessions : "");
+      const names = STATE.members.map((m) => m.name).filter(Boolean);
+      const rows = PARTS.map((part) => {
+        const cur = map[part] || "";
+        const list = [...names];
+        if (cur && cur !== "필요없음" && !list.includes(cur)) list.push(cur);
+        let opts = `<option value="">(미정)</option>`;
+        opts += list.map((n) => `<option value="${escapeHtml(n)}" ${n === cur ? "selected" : ""}>${escapeHtml(n)}</option>`).join("");
+        opts += `<option value="필요없음" ${cur === "필요없음" ? "selected" : ""}>필요없음</option>`;
+        return `<div class="sess-row"><span class="sess-part">${part}</span><select name="sess__${part}">${opts}</select></div>`;
+      }).join("");
+      return `<div class="fld"><span>${f.label}</span><div class="sess-grid">${rows}</div></div>`;
+    }
     if (f.type === "timeslots") {
       const selected = new Set(parseSlots(val));
       const boxes = TIME_SLOTS.map((slot) => {
@@ -1013,6 +1059,14 @@ async function saveModal(e) {
       const extraEl = form.elements[`${f.name}__extra`];
       const extras = extraEl ? splitList(extraEl.value) : [];
       values[f.name] = [...checked, ...extras].join(", ");
+    } else if (f.type === "sessions") {
+      const map = {};
+      PARTS.forEach((part) => {
+        const el = form.elements[`sess__${part}`];
+        const v = el ? (el.value || "").trim() : "";
+        if (v) map[part] = v;
+      });
+      values[f.name] = stringifySessions(map);
     } else {
       values[f.name] = (form.elements[f.name].value || "").trim();
     }

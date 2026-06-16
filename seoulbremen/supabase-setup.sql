@@ -14,8 +14,12 @@ create table if not exists rehearsals (
 create table if not exists songs (
   id bigint generated always as identity primary key,
   title text, artist text, status text, key text, link text, notes text,
+  sessions text,
   created_at timestamptz default now()
 );
+
+-- 이미 songs 테이블을 만든 경우 세션 컬럼만 추가:
+alter table songs add column if not exists sessions text;
 
 create table if not exists members (
   id bigint generated always as identity primary key,
