@@ -481,6 +481,30 @@ function renderRehearsals() {
   }).join("");
 }
 
+// 곡 카드의 세션 표시 — 관리자는 파트별 드롭다운으로 바로 편집, 일반은 읽기 전용
+function songSessionsHtml(s) {
+  const map = parseSessions(s.sessions);
+  if (IS_ADMIN) {
+    const names = STATE.members.map((m) => m.name).filter(Boolean);
+    return `<div class="song-sessions admin">${PARTS.map((part) => {
+      const cur = map[part] || "";
+      const list = [...names];
+      if (cur && cur !== "필요없음" && !list.includes(cur)) list.push(cur);
+      let opts = `<option value="">구하는 중</option>`;
+      opts += list.map((n) => `<option value="${escapeHtml(n)}" ${n === cur ? "selected" : ""}>${escapeHtml(n)}</option>`).join("");
+      opts += `<option value="필요없음" ${cur === "필요없음" ? "selected" : ""}>필요없음</option>`;
+      return `<label class="sess-edit"><span class="sess-part">${part}</span><select data-sess-song="${s._row}" data-sess-part="${part}">${opts}</select></label>`;
+    }).join("")}</div>`;
+  }
+  if (!Object.keys(map).length) return "";
+  return `<div class="song-sessions">${PARTS.map((p) => {
+    const who = map[p];
+    if (!who) return `<span class="sess-chip tbd"><em>${p}</em> 구하는 중</span>`;
+    const muted = who === "필요없음";
+    return `<span class="sess-chip${muted ? " muted" : ""}"><em>${escapeHtml(p)}</em> ${escapeHtml(who)}</span>`;
+  }).join("")}</div>`;
+}
+
 function renderSongs() {
   const el = document.getElementById("songs");
   const list = STATE.songs;
@@ -497,16 +521,7 @@ function renderSongs() {
         <span class="status ${statusClass}">${escapeHtml(status)}</span>
       </div>
       ${s.key ? `<div class="song-meta">Key: <span class="key">${escapeHtml(s.key)}</span></div>` : ""}
-      ${(() => {
-        const map = parseSessions(s.sessions);
-        const filled = PARTS.filter((p) => map[p]);
-        if (!filled.length) return "";
-        return `<div class="song-sessions">${filled.map((p) => {
-          const who = map[p];
-          const muted = who === "필요없음";
-          return `<span class="sess-chip${muted ? " muted" : ""}"><em>${escapeHtml(p)}</em> ${escapeHtml(who)}</span>`;
-        }).join("")}</div>`;
-      })()}
+      ${songSessionsHtml(s)}
       ${s.notes ? `<div class="song-notes">${escapeHtml(s.notes)}</div>` : ""}
       ${s.link ? `<a class="listen" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">▶ 들어보기</a>` : ""}
       ${adminCtrls("song", s._row)}
@@ -1113,6 +1128,24 @@ function bindItemControls() {
         await sbDelete(spec.tab, b.dataset.row);
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
+    }));
+  document.querySelectorAll("[data-sess-song]").forEach((sel) =>
+    sel.addEventListener("change", async () => {
+      const id = sel.dataset.sessSong, part = sel.dataset.sessPart, val = sel.value;
+      const song = STATE.songs.find((x) => String(x._row) === String(id));
+      if (!song) return;
+      const map = parseSessions(song.sessions);
+      if (val) map[part] = val; else delete map[part];
+      const newStr = stringifySessions(map);
+      sel.disabled = true;
+      try {
+        await sbUpdate("songs", id, { sessions: newStr });
+        song.sessions = newStr; // 로컬 반영 후 재렌더 (재조회 없이 빠르게)
+        renderAll();
+      } catch (e) {
+        alert("세션 저장 실패: " + e.message);
+        sel.disabled = false;
+      }
     }));
   document.querySelectorAll("[data-delphoto]").forEach((b) =>
     b.addEventListener("click", async (e) => {

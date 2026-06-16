@@ -322,6 +322,34 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 }
 .sess-chip em { font-style: normal; font-size: 0.7rem; color: var(--text-dim); font-weight: 700; }
 .sess-chip.muted { opacity: 0.5; }
+.sess-chip.tbd {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(255, 184, 77, 0.08);
+}
+.sess-chip.tbd em { color: var(--accent); opacity: 0.8; }
+
+/* 관리자: 곡 카드에서 파트별 인라인 편집 */
+.song-sessions.admin { flex-direction: column; gap: 6px; }
+.sess-edit { display: flex; align-items: center; gap: 8px; }
+.sess-edit .sess-part {
+  flex: 0 0 60px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.sess-edit select {
+  flex: 1;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-family: inherit;
+}
+.sess-edit select:focus { outline: none; border-color: var(--accent-2); }
 
 /* 세션 편집(모달) */
 .sess-grid { display: flex; flex-direction: column; gap: 8px; }
