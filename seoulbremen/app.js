@@ -17,7 +17,7 @@ const CLUB_DEFAULT = {
     "서울 브레멘은 합주를 사랑하는 사람들이 모인 음악 동아리입니다. 매주 모여 함께 연습하고, 무대를 만들고, 그 순간들을 기록합니다.",
 };
 
-let STATE = { rehearsals: [], songs: [], photos: [], members: [], poll: [], votes: [], comments: [] };
+let STATE = { rehearsals: [], songs: [], photos: [], members: [], poll: [], votes: [], comments: [], events: [] };
 let IS_ADMIN = false;
 
 // ---------------- 유틸 ----------------
@@ -204,6 +204,9 @@ function normalize(raw) {
     poll: (raw.poll || []).map((p) => ({ _row: p.id, date: p.date })),
     votes: (raw.votes || []).map((v) => ({ _row: v.id, option: v.option, name: v.name })),
     comments: (raw.comments || []).map((c) => ({ _row: c.id, name: c.name, comment: c.comment, time: c.time })),
+    events: (raw.events || []).map((e) => ({
+      _row: e.id, date: e.date, time: e.time, title: e.title, type: e.type, location: e.location, notes: e.notes,
+    })),
   };
 }
 
@@ -225,13 +228,14 @@ async function loadPhotos() {
 async function loadData() {
   if (SB_READY) {
     try {
-      const [reh, sng, mem, poll, votes, comments, photos] = await Promise.all([
+      const [reh, sng, mem, poll, votes, comments, photos, events] = await Promise.all([
         sbSelect("rehearsals"), sbSelect("songs"), sbSelect("members"),
         sbSelect("poll"), sbSelect("votes"), sbSelect("comments"),
         loadPhotos(),
+        sbSelect("events").catch(() => []), // events 테이블 없어도 전체는 살림
       ]);
       LOAD_STATUS = { source: "supabase", error: "" };
-      return normalize({ rehearsals: reh, songs: sng, members: mem, poll, votes, comments, photos });
+      return normalize({ rehearsals: reh, songs: sng, members: mem, poll, votes, comments, photos, events });
     } catch (e) {
       LOAD_STATUS = { source: "demo", error: e.message };
       console.error("Supabase 로딩 실패, data.json으로 대체합니다.", e);
@@ -503,6 +507,65 @@ function songSessionsHtml(s) {
     const muted = who === "필요없음";
     return `<span class="sess-chip${muted ? " muted" : ""}"><em>${escapeHtml(p)}</em> ${escapeHtml(who)}</span>`;
   }).join("")}</div>`;
+}
+
+// 스케줄(이벤트) → 구글 캘린더 링크
+function eventCalUrl(ev) {
+  const v = (ev.date || "").replace(/-/g, "").slice(0, 8);
+  if (!/^\d{8}$/.test(v)) return "";
+  const dt = (min) => {
+    const d = new Date(+v.slice(0, 4), +v.slice(4, 6) - 1, +v.slice(6, 8));
+    d.setMinutes(min);
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`;
+  };
+  let dates;
+  const mr = (ev.time || "").match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+  const ms = (ev.time || "").match(/(\d{1,2}):(\d{2})/);
+  if (mr) dates = `${dt(+mr[1] * 60 + +mr[2])}/${dt(+mr[3] * 60 + +mr[4])}`;
+  else if (ms) { const s = +ms[1] * 60 + +ms[2]; dates = `${dt(s)}/${dt(s + 60)}`; }
+  else dates = `${v}/${dt(1440).slice(0, 8)}`;
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `[서울 브레멘] ${ev.title || ev.type || "이벤트"}`,
+    dates,
+    details: ev.notes || "",
+    location: ev.location || "",
+    ctz: "Asia/Seoul",
+  });
+  return "https://calendar.google.com/calendar/render?" + params.toString();
+}
+
+function renderEvents() {
+  const el = document.getElementById("events");
+  if (!el) return;
+  const list = STATE.events;
+  if (!list.length) {
+    el.innerHTML = `<div class="empty">아직 등록된 스케줄이 없습니다.${IS_ADMIN ? " 위의 <b>+ 추가</b>로 공연·회식 등을 등록해보세요!" : ""}</div>`;
+    return;
+  }
+  const sorted = [...list].sort((a, b) => new Date(b.date) - new Date(a.date));
+  el.innerHTML = sorted.map((ev) => {
+    const dd = fmtDate(ev.date);
+    const type = (ev.type || "").trim();
+    const typeClass = ["공연", "회식", "모임", "기타"].includes(type) ? type : "기타";
+    const cal = eventCalUrl(ev);
+    return `<div class="rehearsal">
+      <div class="rehearsal-top">
+        <div class="date-badge"><span class="d">${dd.d}</span><span class="m">${dd.m}</span></div>
+        <div class="info">
+          <h3>${escapeHtml(ev.title || "이벤트")} ${type ? `<span class="ev-type ${typeClass}">${escapeHtml(type)}</span>` : ""}</h3>
+          <div class="meta-row">
+            ${ev.time ? `<span>🕒 ${escapeHtml(ev.time)}</span>` : ""}
+            ${ev.location ? `<span>📍 ${escapeHtml(ev.location)}</span>` : ""}
+          </div>
+          ${ev.notes ? `<div class="notes">${escapeHtml(ev.notes)}</div>` : ""}
+          ${cal ? `<div class="cal-row"><a class="cal-btn" href="${escapeHtml(cal)}" target="_blank" rel="noopener">📅 캘린더에 추가</a></div>` : ""}
+          ${adminCtrls("event", ev._row)}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
 }
 
 function renderSongs() {
@@ -900,6 +963,7 @@ function renderAll() {
   renderRehearsals();
   renderPoll();
   renderComments();
+  renderEvents();
   renderSongs();
   renderMembers();
   renderPhotos();
@@ -948,6 +1012,18 @@ const FORMS = {
       { name: "joined", label: "가입", type: "text", placeholder: "예: 2026" },
     ],
   },
+  event: {
+    title: "스케줄",
+    tab: "events",
+    fields: [
+      { name: "date", label: "날짜", type: "date", required: true },
+      { name: "time", label: "시간", type: "text", placeholder: "예: 18:00 또는 18:00-21:00" },
+      { name: "title", label: "제목", type: "text", required: true, placeholder: "예: 정기공연, 뒤풀이 회식" },
+      { name: "type", label: "종류", type: "select", options: ["공연", "회식", "모임", "기타"] },
+      { name: "location", label: "장소", type: "text" },
+      { name: "notes", label: "메모", type: "textarea" },
+    ],
+  },
   poll: {
     title: "투표 후보 일정",
     tab: "poll",
@@ -976,7 +1052,7 @@ function sourceOptions(source) {
 
 let modalCtx = null; // { type, row|null }
 
-const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos", poll: "poll" };
+const TYPE_KEY = { rehearsal: "rehearsals", song: "songs", member: "members", photo: "photos", poll: "poll", event: "events" };
 function findRecord(type, row) {
   return (STATE[TYPE_KEY[type]] || []).find((x) => String(x._row) === String(row));
 }
@@ -1185,6 +1261,23 @@ function toggleAdmin(e) {
   }
 }
 
+// ---------------- 페이지(네비) 전환 ----------------
+
+function showPage(id) {
+  const pages = document.querySelectorAll("main .page");
+  let found = false;
+  pages.forEach((p) => { const on = p.id === id; p.classList.toggle("active", on); if (on) found = true; });
+  if (!found) { id = "rehearsals-sec"; document.getElementById(id).classList.add("active"); }
+  document.querySelectorAll(".nav-links a[data-page]").forEach((a) =>
+    a.classList.toggle("active", a.dataset.page === id));
+  window.scrollTo(0, 0);
+}
+
+function routeFromHash() {
+  const key = (location.hash || "").replace(/^#/, "");
+  showPage(key ? `${key}-sec` : "rehearsals-sec");
+}
+
 // ---------------- 새로고침 ----------------
 
 async function refresh() {
@@ -1203,6 +1296,9 @@ function setupStatic() {
 
   // 관리자 토글
   document.getElementById("admin-toggle").addEventListener("click", toggleAdmin);
+
+  // 네비게이션(페이지 전환)
+  window.addEventListener("hashchange", routeFromHash);
 
   // 추가 버튼
   document.querySelectorAll(".add-btn").forEach((b) =>
@@ -1239,6 +1335,7 @@ function setupStatic() {
     fl.hidden = false;
   }
 
+  routeFromHash(); // 현재 해시에 맞는 페이지 표시
   await refresh();
   // 세션에 관리자 기록이 있으면 복원
   if (SB_READY && sessionStorage.getItem("sb_admin") === "1") setAdmin(true);
