@@ -17,11 +17,12 @@
     <div class="nav-inner">
       <div class="nav-brand">서울 <span>브레멘</span> 🎵</div>
       <div class="nav-links">
-        <a href="#rehearsals-sec">합주 일정</a>
-        <a href="#poll-sec">투표</a>
-        <a href="#songs-sec">연습곡</a>
-        <a href="#members-sec">멤버</a>
-        <a href="#gallery-sec">사진</a>
+        <a href="#rehearsals" data-page="rehearsals-sec">합주 일정</a>
+        <a href="#poll" data-page="poll-sec">투표</a>
+        <a href="#schedule" data-page="schedule-sec">스케줄</a>
+        <a href="#songs" data-page="songs-sec">연습곡</a>
+        <a href="#members" data-page="members-sec">멤버</a>
+        <a href="#gallery" data-page="gallery-sec">사진</a>
         <a href="#" id="admin-toggle">관리</a>
       </div>
     </div>
@@ -41,7 +42,7 @@
   </header>
 
   <main class="container">
-    <section id="rehearsals-sec">
+    <section id="rehearsals-sec" class="page">
       <div class="section-head">
         <h2>🗓️ 합주 일정
           <button class="add-btn" data-add="rehearsal" hidden>+ 추가</button>
@@ -51,7 +52,7 @@
       <div id="rehearsals"></div>
     </section>
 
-    <section id="poll-sec">
+    <section id="poll-sec" class="page">
       <div class="section-head">
         <h2>🗳️ 일정 투표</h2>
         <div class="sub">가능한 날짜를 달력에서 눌러주세요 · 가장 많이 모이는 날로 합주를 정해요</div>
@@ -61,7 +62,17 @@
       <div id="poll-comments" class="poll-comments"></div>
     </section>
 
-    <section id="songs-sec">
+    <section id="schedule-sec" class="page">
+      <div class="section-head">
+        <h2>📅 스케줄
+          <button class="add-btn" data-add="event" hidden>+ 추가</button>
+        </h2>
+        <div class="sub">공연, 회식, 모임 등 동아리 이벤트</div>
+      </div>
+      <div id="events"></div>
+    </section>
+
+    <section id="songs-sec" class="page">
       <div class="section-head">
         <h2>🎼 연습곡
           <button class="add-btn" data-add="song" hidden>+ 추가</button>
@@ -71,7 +82,7 @@
       <div id="songs" class="song-grid"></div>
     </section>
 
-    <section id="members-sec">
+    <section id="members-sec" class="page">
       <div class="section-head">
         <h2>👥 멤버
           <button class="add-btn" data-add="member" hidden>+ 추가</button>
@@ -81,7 +92,7 @@
       <div id="members" class="member-grid"></div>
     </section>
 
-    <section id="gallery-sec">
+    <section id="gallery-sec" class="page">
       <div class="section-head">
         <h2>📷 활동 사진
           <button class="upload-btn" id="photo-upload-btn" hidden>📸 사진 올리기</button>

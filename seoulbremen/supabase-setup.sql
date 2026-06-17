@@ -48,6 +48,13 @@ create table if not exists comments (
   created_at timestamptz default now()
 );
 
+-- 스케줄 (공연/회식/모임 등 이벤트)
+create table if not exists events (
+  id bigint generated always as identity primary key,
+  date text, time text, title text, type text, location text, notes text,
+  created_at timestamptz default now()
+);
+
 -- 2) RLS (행 수준 보안) 켜기
 alter table rehearsals enable row level security;
 alter table songs      enable row level security;
@@ -55,6 +62,7 @@ alter table members    enable row level security;
 alter table poll       enable row level security;
 alter table votes      enable row level security;
 alter table comments   enable row level security;
+alter table events     enable row level security;
 
 -- 3) 정책: '공유 비밀번호(간단)' 방식 — 익명(anon) 키로 읽기/쓰기 모두 허용.
 --    (편집 보호는 사이트의 비밀번호 UI로만 처리합니다. 진짜 DB 보안이 필요하면
@@ -62,7 +70,7 @@ alter table comments   enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['rehearsals','songs','members','poll','votes','comments'] loop
+  foreach t in array array['rehearsals','songs','members','poll','votes','comments','events'] loop
     execute format('drop policy if exists "public_all" on public.%I;', t);
     execute format('create policy "public_all" on public.%I for all to anon, authenticated using (true) with check (true);', t);
   end loop;
