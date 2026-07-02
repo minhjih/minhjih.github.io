@@ -361,15 +361,79 @@ async function uploadPhotos(files) {
 
 // ---------------- 렌더링 ----------------
 
-function renderHero(club, stats) {
-  document.getElementById("club-name").innerHTML = club.name
-    ? escapeHtml(club.name).replace(/(\S+)$/, '<span class="accent">$1</span>')
-    : "서울 <span class='accent'>브레멘</span>";
-  document.getElementById("tagline").textContent = club.tagline || "";
-  document.getElementById("desc").textContent = club.description || "";
-  document.getElementById("stat-rehearsals").textContent = stats.rehearsals;
-  document.getElementById("stat-songs").textContent = stats.songs;
-  document.getElementById("stat-photos").textContent = stats.photos;
+// 상단 배너 사진: config의 BANNER_URL, 없으면 갤러리 첫 사진
+function setBanner() {
+  const hero = document.getElementById("hero");
+  if (!hero) return;
+  const url = CFG.BANNER_URL
+    ? driveImageUrl(CFG.BANNER_URL, "w1600")
+    : (STATE.photos.find((p) => p.src) || {}).src || "";
+  if (url) {
+    hero.style.backgroundImage =
+      `linear-gradient(rgba(14,13,19,0.45), rgba(14,13,19,0.82)), url("${url}")`;
+    hero.classList.add("has-banner");
+  } else {
+    hero.style.backgroundImage = "";
+    hero.classList.remove("has-banner");
+  }
+}
+
+// ---------------- 공유 (카카오톡 등) ----------------
+const SITE_URL = (() => { try { return location.origin + location.pathname; } catch (e) { return ""; } })();
+
+function ensureKakao() {
+  return new Promise((resolve) => {
+    if (!CFG.KAKAO_JS_KEY) return resolve(false);
+    const init = () => { try { if (!window.Kakao.isInitialized()) window.Kakao.init(CFG.KAKAO_JS_KEY); resolve(true); } catch (e) { resolve(false); } };
+    if (window.Kakao && window.Kakao.isInitialized) return init();
+    if (window.Kakao) return init();
+    const s = document.createElement("script");
+    s.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js";
+    s.onload = init; s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
+}
+
+async function shareContent(title, text, url) {
+  // 1) 카카오 SDK (KAKAO_JS_KEY가 있을 때 카카오톡 카드로)
+  if (CFG.KAKAO_JS_KEY) {
+    const ok = await ensureKakao();
+    if (ok && window.Kakao && window.Kakao.Share) {
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: "text",
+          text: `${title}\n\n${text}`,
+          link: { mobileWebUrl: url, webUrl: url },
+        });
+        return;
+      } catch (e) { /* fall through */ }
+    }
+  }
+  // 2) 휴대폰 기본 공유 시트 (카카오톡 선택 가능)
+  if (navigator.share) {
+    try { await navigator.share({ title, text, url }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  // 3) 클립보드 복사
+  const full = `${title}\n${text}\n${url}`;
+  try { await navigator.clipboard.writeText(full); alert("공유 내용을 복사했어요. 카카오톡에 붙여넣기 하세요!"); }
+  catch (e) { prompt("아래 내용을 복사해 공유하세요:", full); }
+}
+
+function shareRehearsal(r) {
+  const parts = [];
+  if (r.date) parts.push(`🗓️ ${r.date}${r.time ? " " + formatTime(r.time) : ""}`);
+  if (r.location) parts.push(`📍 ${r.location}`);
+  if ((r.songs || []).length) parts.push(`🎵 ${r.songs.join(", ")}`);
+  if ((r.attendees || []).length) parts.push(`👥 ${r.attendees.join(", ")}`);
+  shareContent("Seoul Bremen 합주 일정", parts.join("\n"), SITE_URL + "#rehearsals");
+}
+function shareEvent(ev) {
+  const parts = [];
+  if (ev.date) parts.push(`📅 ${ev.date}${ev.time ? " " + ev.time : ""}`);
+  if (ev.location) parts.push(`📍 ${ev.location}`);
+  if (ev.notes) parts.push(ev.notes);
+  shareContent(`[${ev.type || "일정"}] ${ev.title || "이벤트"}`, parts.join("\n"), SITE_URL + "#schedule");
 }
 
 function adminCtrls(type, row) {
@@ -477,7 +541,10 @@ function renderRehearsals() {
           ${attendees ? `<div class="attendees"><div class="label">참석 (${r.attendees.length}명)</div>${attendees}</div>` : ""}
           ${costBlock(r)}
           ${r.notes ? `<div class="notes">${escapeHtml(r.notes)}</div>` : ""}
-          ${calendarUrl(r) ? `<div class="cal-row"><a class="cal-btn" href="${escapeHtml(calendarUrl(r))}" target="_blank" rel="noopener">📅 캘린더에 추가</a></div>` : ""}
+          <div class="cal-row">
+            ${calendarUrl(r) ? `<a class="cal-btn" href="${escapeHtml(calendarUrl(r))}" target="_blank" rel="noopener">📅 캘린더에 추가</a>` : ""}
+            <button class="cal-btn share-btn" data-share-rehearsal="${r._row}">📤 공유</button>
+          </div>
           ${adminCtrls("rehearsal", r._row)}
         </div>
       </div>
@@ -560,7 +627,10 @@ function renderEvents() {
             ${ev.location ? `<span>📍 ${escapeHtml(ev.location)}</span>` : ""}
           </div>
           ${ev.notes ? `<div class="notes">${escapeHtml(ev.notes)}</div>` : ""}
-          ${cal ? `<div class="cal-row"><a class="cal-btn" href="${escapeHtml(cal)}" target="_blank" rel="noopener">📅 캘린더에 추가</a></div>` : ""}
+          <div class="cal-row">
+            ${cal ? `<a class="cal-btn" href="${escapeHtml(cal)}" target="_blank" rel="noopener">📅 캘린더에 추가</a>` : ""}
+            <button class="cal-btn share-btn" data-share-event="${ev._row}">📤 공유</button>
+          </div>
           ${adminCtrls("event", ev._row)}
         </div>
       </div>
@@ -970,6 +1040,7 @@ function renderAll() {
   document.getElementById("stat-rehearsals").textContent = STATE.rehearsals.length;
   document.getElementById("stat-songs").textContent = STATE.songs.length;
   document.getElementById("stat-photos").textContent = STATE.photos.filter((p) => p.src).length;
+  setBanner();
   bindItemControls();
 }
 
@@ -1205,6 +1276,18 @@ function bindItemControls() {
         await refresh();
       } catch (err) { alert("삭제 실패: " + err.message); }
     }));
+  document.querySelectorAll("[data-share-rehearsal]").forEach((b) =>
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const r = STATE.rehearsals.find((x) => String(x._row) === String(b.dataset.shareRehearsal));
+      if (r) shareRehearsal(r);
+    }));
+  document.querySelectorAll("[data-share-event]").forEach((b) =>
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const ev = STATE.events.find((x) => String(x._row) === String(b.dataset.shareEvent));
+      if (ev) shareEvent(ev);
+    }));
   document.querySelectorAll("[data-sess-song]").forEach((sel) =>
     sel.addEventListener("change", async () => {
       const id = sel.dataset.sessSong, part = sel.dataset.sessPart, val = sel.value;
@@ -1324,7 +1407,6 @@ function setupStatic() {
 
 (async function init() {
   setupStatic();
-  renderHero(CLUB_DEFAULT, { rehearsals: 0, songs: 0, photos: 0 });
 
   // 사진 올리기 버튼: 앱스 스크립트가 연결돼 있으면 누구나 사용 가능
   if (CFG.SCRIPT_URL) document.getElementById("photo-upload-btn").hidden = false;

@@ -93,21 +93,28 @@ main .page { border-top: none !important; padding-top: 28px; }
 
 /* ===== Hero ===== */
 .hero {
-  padding: 44px 0 32px;
+  padding: 72px 0 56px;
   text-align: center;
-  background: radial-gradient(
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--bg-soft);
+  background-image: radial-gradient(
       120% 90% at 50% -10%,
       rgba(123, 108, 246, 0.18),
       transparent 60%
     ),
     radial-gradient(80% 60% at 80% 0%, rgba(255, 184, 77, 0.12), transparent 60%);
 }
-.hero h1 {
-  font-size: clamp(2.4rem, 7vw, 4rem);
+.hero.has-banner { border-bottom: 1px solid var(--border); }
+.hero-title {
+  font-size: clamp(2.6rem, 9vw, 4.4rem);
   font-weight: 900;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  font-family: "Pretendard", sans-serif;
 }
+.hero.has-banner .hero-title { text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5); }
 .hero h1 .accent { color: var(--accent); }
 .hero .tagline {
   margin-top: 16px;
@@ -261,7 +268,9 @@ section { padding: 56px 0; border-top: 1px solid var(--border); }
 .rehearsal .cost-split { color: var(--green); font-weight: 600; }
 .rehearsal .cost-split b { font-size: 1.05rem; }
 
-.rehearsal .cal-row { margin-top: 12px; }
+.rehearsal .cal-row { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.cal-btn.share-btn { cursor: pointer; }
+.cal-btn.share-btn:hover { border-color: var(--accent-2); color: var(--accent-2); }
 .cal-btn {
   display: inline-flex;
   align-items: center;
