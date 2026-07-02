@@ -24,4 +24,13 @@ window.SEOUL_BREMEN_CONFIG = {
   SCRIPT_URL: "https://script.google.com/macros/s/AKfycbwZKbr67XQypZieBQq8K9Ox4Vnfn0JNhiPxSsS-bALJorwqsr-fAuverT9vo58MYYjVVQ/exec",
   // 사진 공유 드라이브 폴더 ID — 갤러리에 "드라이브 폴더" 바로가기 표시용
   DRIVE_FOLDER_ID: "11oWl1JSrWjNeJeUeFvaKu_Q1eG792Vjk",
+
+  // ----- 배너 / 공유 -----
+  // 상단 배너 사진 URL (구글 드라이브 공유 링크 OK). 비우면 갤러리 첫 사진을 사용.
+  BANNER_URL: "",
+  // (선택) 카카오 JavaScript 키 — 넣으면 공유 시 카카오톡 카드 형태로 보냄.
+  //   비우면 휴대폰 기본 공유(카카오톡 선택 가능) / 링크 복사로 동작.
+  //   Kakao Developers → 내 앱 → 앱 키 → JavaScript 키
+  KAKAO_JS_KEY: "",
 };
+
