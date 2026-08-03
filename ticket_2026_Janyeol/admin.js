@@ -98,7 +98,7 @@ function card(o) {
   const [lbl, cls] = SLABEL[o.status] || ["", ""];
   let acts = "";
   if (o.status === "pending") {
-    acts = `<button class="btn small" data-act="confirm" data-id="${o.id}">✅ 입금확인 · QR발급</button>
+    acts = `<button class="btn small" data-act="confirm" data-id="${o.id}">입금확인 · QR 발급</button>
             <button class="btn ghost small" data-act="cancel" data-id="${o.id}">취소</button>`;
   } else if (o.status === "confirmed") {
     acts = `<button class="btn ghost small" data-act="reset" data-id="${o.id}">확인 취소(대기로)</button>

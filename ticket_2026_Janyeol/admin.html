@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0202" />
-  <title>잔열 · 관리자 (입금 확인)</title>
+  <meta name="theme-color" content="#0a0605" />
+  <title>잔열 · Admin</title>
   <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&family=Noto+Serif+KR:wght@600;700&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,26 +18,25 @@
   <div class="vignette" aria-hidden="true"></div>
   <svg class="svg-defs" aria-hidden="true">
     <filter id="heat" x="-25%" y="-25%" width="150%" height="150%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="7" result="n">
-        <animate attributeName="baseFrequency" dur="15s" values="0.011 0.018;0.015 0.026;0.010 0.02;0.011 0.018" repeatCount="indefinite" />
+      <feTurbulence type="fractalNoise" baseFrequency="0.010 0.016" numOctaves="2" seed="7" result="n">
+        <animate attributeName="baseFrequency" dur="18s" values="0.010 0.016;0.014 0.024;0.009 0.018;0.010 0.016" repeatCount="indefinite" />
       </feTurbulence>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="34" xChannelSelector="R" yChannelSelector="G" />
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="30" xChannelSelector="R" yChannelSelector="G" />
     </filter>
   </svg>
   <div class="wrap">
-    <h2 style="font-size:22px;font-weight:900;margin:6px 0 2px">🔥 잔열 · 관리자</h2>
-    <div class="hint" style="margin-bottom:12px">입금을 확인하고 <b>입장 QR을 발급</b>합니다.</div>
+    <p class="kicker">Janyeol · Desk</p>
+    <h1 class="page-title">관리자 <span>·</span> 입금 확인</h1>
+    <p class="hint" style="margin-bottom:16px">입금을 확인하고 입장 QR을 발급합니다.</p>
 
-    <!-- 로그인 -->
     <div id="gate" class="card">
-      <h2>🔐 관리자 로그인</h2>
+      <h2>Sign in · 관리자</h2>
       <label class="fld">관리자 비밀번호</label>
       <input id="pw" type="password" placeholder="비밀번호" />
       <button class="btn" id="enterBtn">들어가기</button>
       <div class="err" id="gateErr"></div>
     </div>
 
-    <!-- 대시보드 -->
     <div id="dash" class="hidden">
       <div class="stats" id="stats"></div>
       <div class="tabs" id="tabs">
@@ -44,14 +46,14 @@
         <button data-f="all">전체</button>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:6px">
-        <button class="btn ghost small" id="refreshBtn">↻ 새로고침</button>
-        <button class="btn ghost small" id="keyBtn">비밀번호 변경</button>
+        <button class="btn ghost small" id="refreshBtn">새로고침</button>
+        <button class="btn ghost small" id="keyBtn">비밀번호</button>
         <button class="btn ghost small" id="logoutBtn">잠그기</button>
       </div>
       <div id="list"></div>
     </div>
 
-    <div class="footer"><a href="index.html">← 예매 페이지</a> · <a href="check.html">입장 확인 →</a></div>
+    <div class="footer"><a href="index.html">← 예매</a> · <a href="check.html">입장 확인 →</a></div>
   </div>
   <div id="toast" class="toast"></div>
 
