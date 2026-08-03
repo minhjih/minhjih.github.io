@@ -151,6 +151,7 @@ async function renderLoggedIn(user) {
     active.forEach((o) => {
       if (o.status === "confirmed" && o.qr_token) drawQR(`qr-${o.id}`, o.qr_token);
     });
+    wireOrderActions(active);
     $("#addMore").onclick = () => {
       $("#addMore").classList.add("hidden");
       $("#buyMount").classList.remove("hidden");
@@ -185,13 +186,18 @@ function renderOrderCard(o) {
         <div class="qr-meta" style="font-size:26px">입장 완료</div>
         <div class="qr-note">ENTERED · ${o.used_at ? new Date(o.used_at).toLocaleString("ko-KR") : ""}</div>
       </div>`;
-  } else {
-    body = `<div class="pay-box">
-        <div class="row"><span class="k">상태</span><span class="v">입금 확인을 기다리는 중이에요</span></div>
-        <div class="row"><span class="k">입금자명</span><span class="v">${esc(o.depositor_name || o.buyer_name)}</span></div>
+  } else if (o.paid_at) {
+    body = `<div class="pay-box" style="border-color:rgba(74,217,145,.4)">
+        <div class="row"><span class="k">입금완료 신고</span><span class="v" style="color:var(--ok)">${new Date(o.paid_at).toLocaleString("ko-KR")}</span></div>
+        <div class="row"><span class="k">상태</span><span class="v">관리자 확인 대기중</span></div>
       </div>
-      <p class="hint">아직 입금 전이라면 아래 계좌/카카오페이로 <b>${won(o.amount)}</b> 보내주세요. 확인되면 여기에 바로 QR이 떠요.</p>
-      ${paymentInstructionsHTML(o.method, o.amount)}`;
+      <p class="hint">입금 확인이 끝나면 이 화면에 바로 <b>입장 QR</b>이 떠요. 잠시만 기다려 주세요.</p>
+      <details style="margin-top:10px"><summary class="hint">입금 정보 다시 보기</summary>${paymentInstructionsHTML(o.method, o.amount)}</details>`;
+  } else {
+    body = `<p class="hint">아래 안내로 <b>${won(o.amount)}</b> 보낸 뒤 <b>‘입금 완료’</b>를 눌러주세요.<br/>동명이인 구분을 위해 완료 시각이 기록됩니다.</p>
+      ${paymentInstructionsHTML(o.method, o.amount)}
+      <button class="btn" data-pay="${o.id}">① 입금하기</button>
+      <button class="btn ghost" data-paid="${o.id}" id="paidBtn-${o.id}" disabled>② 입금 완료했어요</button>`;
   }
   return `<div class="card">
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
@@ -215,6 +221,41 @@ function drawQR(elId, text) {
     colorDark: "#111111",
     colorLight: "#ffffff",
     correctLevel: window.QRCode.CorrectLevel.M,
+  });
+}
+
+// ---------------- 입금하기 / 입금완료 신고 ----------------
+function wireOrderActions(orders) {
+  orders.forEach((o) => {
+    if (o.status !== "pending" || o.paid_at) return;
+    const payBtn = document.querySelector(`[data-pay="${o.id}"]`);
+    const paidBtn = document.getElementById(`paidBtn-${o.id}`);
+    if (payBtn)
+      payBtn.onclick = () => {
+        const K = CFG.KAKAO || {}, B = CFG.BANK || {};
+        if (o.method === "kakao" && K.link) {
+          window.open(K.link, "_blank", "noopener");
+        } else if (o.method === "bank") {
+          const acc = (B.account || "").replace(/[^0-9]/g, "");
+          if (acc && navigator.clipboard) navigator.clipboard.writeText(acc).catch(() => {});
+          toast("계좌번호를 복사했어요");
+        }
+        if (paidBtn) { paidBtn.disabled = false; paidBtn.classList.remove("ghost"); }
+      };
+    if (paidBtn)
+      paidBtn.onclick = async () => {
+        paidBtn.disabled = true;
+        paidBtn.textContent = "처리 중…";
+        const { error } = await sb.from("tk_orders").update({ paid_at: new Date().toISOString() }).eq("id", o.id);
+        if (error) {
+          paidBtn.disabled = false;
+          paidBtn.textContent = "② 입금 완료했어요";
+          toast("실패: " + error.message);
+          return;
+        }
+        toast("입금 완료를 알렸어요");
+        await refresh();
+      };
   });
 }
 
@@ -253,8 +294,8 @@ function mountBuyForm() {
       <h2>Reserve · 티켓 예매</h2>
       <label class="fld">받는 분 이름 *</label>
       <input id="fName" placeholder="이름" value="${esc(prefill)}" autocomplete="name" />
-      <label class="fld">연락처 (선택)</label>
-      <input id="fPhone" placeholder="010-0000-0000" inputmode="numeric" autocomplete="tel" />
+      <label class="fld">연락처 *</label>
+      <input id="fPhone" placeholder="010-0000-0000" inputmode="tel" autocomplete="tel" />
 
       <label class="fld">결제 방법 *</label>
       <div class="seg" id="segMethod">
@@ -331,6 +372,7 @@ async function submitOrder() {
   const err = $("#formErr");
   err.textContent = "";
   if (!name) return (err.textContent = "받는 분 이름을 입력해주세요.");
+  if (phone.replace(/[^0-9]/g, "").length < 9) return (err.textContent = "연락처를 정확히 입력해주세요.");
   if (!dep) return (err.textContent = "입금자명을 입력해주세요.");
 
   const btn = $("#submitBtn");
@@ -340,7 +382,7 @@ async function submitOrder() {
   const { error } = await sb.from("tk_orders").insert({
     email: CURRENT_USER.email,
     buyer_name: name,
-    phone: phone || null,
+    phone: phone,
     depositor_name: dep,
     quantity: FORM.qty,
     method: FORM.method,
