@@ -1,4 +1,4 @@
-# 자열(自熱) 공연 티켓 QR 시스템 — 설정 가이드 🎟🔥
+# 잔열(殘熱) 공연 티켓 QR 시스템 — 설정 가이드 🎟🔥
 
 주소: **https://minhjih.github.io/ticket_2026_Janyeol/**
 

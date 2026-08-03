@@ -3,16 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#140404" />
-  <title>자열 · 입장 확인 (QR 스캔)</title>
+  <meta name="theme-color" content="#0b0202" />
+  <title>잔열 · 입장 확인 (QR 스캔)</title>
   <meta name="robots" content="noindex" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="sun-stage" aria-hidden="true"><div class="sun"></div></div>
+  <div class="vignette" aria-hidden="true"></div>
+  <svg class="svg-defs" aria-hidden="true">
+    <filter id="heat" x="-25%" y="-25%" width="150%" height="150%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.011 0.018" numOctaves="2" seed="7" result="n">
+        <animate attributeName="baseFrequency" dur="15s" values="0.011 0.018;0.015 0.026;0.010 0.02;0.011 0.018" repeatCount="indefinite" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="34" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
   <div class="wrap">
-    <h2 style="font-size:22px;font-weight:900;margin:6px 0 2px">🎫 자열 · 입장 확인</h2>
+    <h2 style="font-size:22px;font-weight:900;margin:6px 0 2px">🎫 잔열 · 입장 확인</h2>
     <div class="hint" style="margin-bottom:12px">QR을 비추면 자동으로 확인됩니다. 확인된 QR은 <b>즉시 만료</b>됩니다.</div>
 
     <div id="gate" class="card">

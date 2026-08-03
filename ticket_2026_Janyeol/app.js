@@ -1,5 +1,5 @@
 // ===================================================================
-//  자열 (自熱) 티켓 — 구매자 페이지
+//  잔열 (殘熱) 티켓 — 구매자 페이지
 //  Google 로그인 → 구매 폼(계좌이체/카카오페이) → 입금확인 시 QR 자동 표시(실시간)
 // ===================================================================
 const CFG = window.JANYEOL_CONFIG || {};
@@ -29,23 +29,29 @@ function toast(msg) {
 // ---------------- 정적 콘텐츠 ----------------
 function renderStatic() {
   $("#bDate").textContent = EV.dateLabel || "";
-  $("#fbDate").textContent = EV.dateLabel || "";
   $("#bVenue").textContent = EV.venue || "";
   $("#bPrice").textContent = won(PRICE);
   $("#bAddr").textContent = EV.address || "";
   $("#fAddr").textContent = EV.address || "";
   document.title = `${EV.title || "공연"} · 공연 티켓`;
 
-  // 포스터 (없으면 폴백)
+  // 포스터 (없으면 CSS 타이틀 히어로로 폴백)
   const pm = $("#posterMain");
-  pm.src = (CFG.POSTER && CFG.POSTER.main) || "";
-  pm.onerror = () => {
-    pm.classList.add("hidden");
-    $("#posterFallback").classList.remove("hidden");
-  };
+  const src = (CFG.POSTER && CFG.POSTER.main) || "";
+  if (src) {
+    pm.src = src;
+    pm.onerror = () => {
+      pm.closest(".poster-frame").classList.add("hidden");
+      $("#titleStack").classList.remove("hidden");
+    };
+  } else {
+    pm.closest(".poster-frame").classList.add("hidden");
+    $("#titleStack").classList.remove("hidden");
+  }
   const pc = $("#posterCue");
-  pc.src = (CFG.POSTER && CFG.POSTER.cue) || "";
-  pc.onerror = () => pc.classList.add("hidden");
+  const csrc = (CFG.POSTER && CFG.POSTER.cue) || "";
+  if (csrc) { pc.src = csrc; pc.onerror = () => pc.closest(".poster-frame").classList.add("hidden"); }
+  else { pc.closest(".poster-frame").classList.add("hidden"); }
 
   // 큐시트
   const cue = $("#cueList");
