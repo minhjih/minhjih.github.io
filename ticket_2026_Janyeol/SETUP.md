@@ -1,4 +1,4 @@
-# 자열(自熱) 공연 티켓 QR 시스템 — 설정 가이드 🎟🔥
+# 잔열(殘熱) 공연 티켓 QR 시스템 — 설정 가이드 🎟🔥
 
 주소: **https://minhjih.github.io/ticket_2026_Janyeol/**
 
@@ -51,7 +51,8 @@ Supabase 대시보드 → **Authentication → Sign In / Providers → Google**
 - `BANK`: 입금 받을 **은행 / 계좌번호 / 예금주**
 - `KAKAO.link`: 카카오페이 **송금 링크**(있으면), 또는 `img/kakaopay.png` 에 송금 QR 캡처
 - `EVENT.price`: 티켓 가격(기본 7,000원), `maxQuantity`: 1인 최대 매수
-- 포스터 2장을 `img/poster-main.jpg`, `img/poster-cue.jpg` 로 넣기 (없어도 큐시트는 텍스트로 나옵니다)
+- 메인 포스터는 `img/poster-main.jpg` 로 포함되어 있습니다. 교체하려면 같은 경로에 덮어쓰세요.
+  (선택) 곡별 상세 큐시트 이미지를 `img/poster-cue.jpg` 로 넣으면 타임테이블 위에 함께 표시됩니다. 없어도 큐시트는 텍스트로 나옵니다.
 
 ---
 

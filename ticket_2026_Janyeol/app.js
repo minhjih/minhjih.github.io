@@ -1,5 +1,5 @@
 // ===================================================================
-//  자열 (自熱) 티켓 — 구매자 페이지
+//  잔열 (殘熱) 티켓 — 구매자 페이지
 //  Google 로그인 → 구매 폼(계좌이체/카카오페이) → 입금확인 시 QR 자동 표시(실시간)
 // ===================================================================
 const CFG = window.JANYEOL_CONFIG || {};
@@ -29,23 +29,29 @@ function toast(msg) {
 // ---------------- 정적 콘텐츠 ----------------
 function renderStatic() {
   $("#bDate").textContent = EV.dateLabel || "";
-  $("#fbDate").textContent = EV.dateLabel || "";
   $("#bVenue").textContent = EV.venue || "";
   $("#bPrice").textContent = won(PRICE);
   $("#bAddr").textContent = EV.address || "";
   $("#fAddr").textContent = EV.address || "";
   document.title = `${EV.title || "공연"} · 공연 티켓`;
 
-  // 포스터 (없으면 폴백)
+  // 포스터 (없으면 CSS 타이틀 히어로로 폴백)
   const pm = $("#posterMain");
-  pm.src = (CFG.POSTER && CFG.POSTER.main) || "";
-  pm.onerror = () => {
-    pm.classList.add("hidden");
-    $("#posterFallback").classList.remove("hidden");
-  };
+  const src = (CFG.POSTER && CFG.POSTER.main) || "";
+  if (src) {
+    pm.src = src;
+    pm.onerror = () => {
+      pm.closest(".poster-frame").classList.add("hidden");
+      $("#titleStack").classList.remove("hidden");
+    };
+  } else {
+    pm.closest(".poster-frame").classList.add("hidden");
+    $("#titleStack").classList.remove("hidden");
+  }
   const pc = $("#posterCue");
-  pc.src = (CFG.POSTER && CFG.POSTER.cue) || "";
-  pc.onerror = () => pc.classList.add("hidden");
+  const csrc = (CFG.POSTER && CFG.POSTER.cue) || "";
+  if (csrc) { pc.src = csrc; pc.onerror = () => pc.closest(".poster-frame").classList.add("hidden"); }
+  else { pc.closest(".poster-frame").classList.add("hidden"); }
 
   // 큐시트
   const cue = $("#cueList");
@@ -75,21 +81,21 @@ function renderStatic() {
 
 // ---------------- 상태 라벨 ----------------
 const STATUS_LABEL = {
-  pending: ["입금 확인 대기중", "status-pending"],
-  confirmed: ["입장 QR 발급 완료", "status-confirmed"],
+  pending: ["확인 대기", "status-pending"],
+  confirmed: ["발급 완료", "status-confirmed"],
   used: ["입장 완료", "status-used"],
-  cancelled: ["취소됨", "status-cancelled"],
+  cancelled: ["취소", "status-cancelled"],
 };
 
 // ---------------- 렌더: 로그인 전 ----------------
 function renderLoggedOut() {
   $("#ticketArea").innerHTML = `
     <div class="card center">
-      <h2 style="justify-content:center">🎟 티켓 예매</h2>
+      <h2 style="justify-content:center">Reserve · 티켓 예매</h2>
       <p class="hint">구글 계정으로 로그인하면 예매 후<br/>입금이 확인되는 즉시 <b>입장 QR</b>이 이 화면에 나타납니다.</p>
       <button class="btn google" id="loginBtn">
         <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.1 0 24 0 14.6 0 6.4 5.4 2.6 13.2l7.8 6.1C12.2 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.5z"/><path fill="#FBBC05" d="M10.4 28.3c-.5-1.4-.8-2.9-.8-4.3s.3-3 .8-4.3l-7.8-6.1C.9 16.7 0 20.2 0 24s.9 7.3 2.6 10.4l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.1-5.5c-2 1.3-4.6 2.1-7.9 2.1-6.4 0-11.8-4.1-13.7-9.8l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
-        Google로 로그인
+        Google로 계속하기
       </button>
       <div class="err" id="authErr"></div>
     </div>`;
@@ -118,7 +124,7 @@ async function renderLoggedIn(user) {
 
   const area = $("#ticketArea");
   const name = user.user_metadata?.full_name || user.email;
-  const bar = `<div class="userbar"><span>👤 <b>${esc(name)}</b></span>
+  const bar = `<div class="userbar"><span><b>${esc(name)}</b></span>
       <button class="btn ghost small" id="logoutBtn" style="width:auto;margin:0;padding:6px 12px">로그아웃</button></div>`;
 
   if (error) {
@@ -175,10 +181,9 @@ function renderOrderCard(o) {
         <div class="qr-note">입장 시 이 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
       </div>`;
   } else if (o.status === "used") {
-    body = `<div class="center" style="padding:14px 0">
-        <div style="font-size:44px">✅</div>
-        <div class="qr-meta">입장 완료</div>
-        <div class="qr-note">${o.used_at ? new Date(o.used_at).toLocaleString("ko-KR") : ""}</div>
+    body = `<div class="center" style="padding:18px 0 6px">
+        <div class="qr-meta" style="font-size:26px">입장 완료</div>
+        <div class="qr-note">ENTERED · ${o.used_at ? new Date(o.used_at).toLocaleString("ko-KR") : ""}</div>
       </div>`;
   } else {
     body = `<div class="pay-box">
@@ -189,8 +194,8 @@ function renderOrderCard(o) {
       ${paymentInstructionsHTML(o.method, o.amount)}`;
   }
   return `<div class="card">
-      <h2>🎟 내 티켓 <span class="status-pill ${cls}" style="margin-left:auto;font-size:12px">${label}</span></h2>
-      <div class="pay-box" style="border-style:solid;margin-top:0">
+      <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
+      <div class="pay-box" style="margin-top:0">
         <div class="row"><span class="k">수량</span><span class="v">${o.quantity}인</span></div>
         <div class="row"><span class="k">금액</span><span class="v">${won(o.amount)}</span></div>
         <div class="row"><span class="k">결제</span><span class="v">${o.method === "kakao" ? "카카오페이" : "계좌이체"}</span></div>
@@ -233,7 +238,7 @@ function paymentInstructionsHTML(method, amount) {
       <div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder || "")}</span></div>
       <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
     </div>
-    <p class="hint">⚠️ 입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
+    <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
 }
 
 // ---------------- 구매 폼 ----------------
@@ -245,7 +250,7 @@ function mountBuyForm() {
   const prefill = CURRENT_USER?.user_metadata?.full_name || "";
   mount.innerHTML = `
     <div class="card">
-      <h2>🎟 <span class="em">티켓 예매</span></h2>
+      <h2>Reserve · 티켓 예매</h2>
       <label class="fld">받는 분 이름 *</label>
       <input id="fName" placeholder="이름" value="${esc(prefill)}" autocomplete="name" />
       <label class="fld">연락처 (선택)</label>

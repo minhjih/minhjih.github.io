@@ -1,5 +1,5 @@
 // ===================================================================
-//  자열 (自熱) 티켓 — 확인자(입구) 페이지
+//  잔열 (殘熱) 티켓 — 확인자(입구) 페이지
 //  QR 스캔 → janyeol-desk 'checkin' → confirmed 면 소비(만료), used 면 이미 사용됨
 // ===================================================================
 const CFG = window.JANYEOL_CONFIG || {};
@@ -53,17 +53,17 @@ async function desk(action, params = {}) {
 }
 
 const RESULT = {
-  ok: (o) => ({ cls: "ok", big: "✅ 입장", who: `${esc(o.buyer_name)} · ${o.quantity}인`, sub: `${esc(o.email || "")}` }),
-  already_used: (o) => ({ cls: "used", big: "⚠️ 이미 사용됨", who: `${esc(o.buyer_name)} · ${o.quantity}인`, sub: `사용시각 ${fmt(o.used_at)} · ${esc(o.checked_by || "")}` }),
-  pending: () => ({ cls: "used", big: "⏳ 입금 미확인", who: "아직 발급되지 않은 티켓", sub: "관리자 입금확인 후 입장 가능" }),
-  cancelled: () => ({ cls: "bad", big: "🚫 취소된 티켓", who: "", sub: "" }),
-  invalid: () => ({ cls: "bad", big: "❌ 유효하지 않은 QR", who: "", sub: "우리 공연 티켓이 아닙니다" }),
+  ok: (o) => ({ cls: "ok", big: "입장", en: "Entry Granted", who: `${esc(o.buyer_name)} · ${o.quantity}인`, sub: `${esc(o.email || "")}` }),
+  already_used: (o) => ({ cls: "used", big: "이미 사용됨", en: "Already Used", who: `${esc(o.buyer_name)} · ${o.quantity}인`, sub: `사용시각 ${fmt(o.used_at)} · ${esc(o.checked_by || "")}` }),
+  pending: () => ({ cls: "used", big: "입금 미확인", en: "Not Confirmed", who: "아직 발급되지 않은 티켓", sub: "관리자 입금확인 후 입장 가능" }),
+  cancelled: () => ({ cls: "bad", big: "취소된 티켓", en: "Cancelled", who: "", sub: "" }),
+  invalid: () => ({ cls: "bad", big: "무효", en: "Invalid QR", who: "", sub: "우리 공연 티켓이 아닙니다" }),
 };
 
 function showResult(r) {
   const spec = (RESULT[r.result] || RESULT.invalid)(r.order || {});
   $("#result").innerHTML = `<div class="result ${spec.cls}">
-      <p class="big">${spec.big}</p>
+      <p class="big">${spec.big}<span class="en">${spec.en}</span></p>
       ${spec.who ? `<div class="who">${spec.who}</div>` : ""}
       ${spec.sub ? `<div class="sub">${spec.sub}</div>` : ""}
     </div>`;
