@@ -90,13 +90,15 @@ const STATUS_LABEL = {
 // ---------------- 렌더: 로그인 전 ----------------
 function renderLoggedOut() {
   $("#ticketArea").innerHTML = `
-    <div class="card center">
-      <h2 style="justify-content:center">Reserve · 티켓 예매</h2>
-      <p class="hint">구글 계정으로 로그인하면 예매 후<br/>입금이 확인되는 즉시 <b>입장 QR</b>이 이 화면에 나타납니다.</p>
+    <div class="card cta center">
+      <div class="kicker" style="text-align:center;color:var(--gold);margin-bottom:8px">Ticket · 티켓 구매</div>
+      <div class="buy-price">${won(PRICE)} <small>1인</small></div>
+      <p class="hint" style="margin-top:10px">아래 버튼으로 <b>구글 로그인</b>하면 바로 티켓을 예매할 수 있어요.<br/>예매 → 입금 → 확인되면 <b>입장 QR</b>이 이 화면에 자동으로 떠요.</p>
       <button class="btn google" id="loginBtn">
         <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.1 0 24 0 14.6 0 6.4 5.4 2.6 13.2l7.8 6.1C12.2 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.5z"/><path fill="#FBBC05" d="M10.4 28.3c-.5-1.4-.8-2.9-.8-4.3s.3-3 .8-4.3l-7.8-6.1C.9 16.7 0 20.2 0 24s.9 7.3 2.6 10.4l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.1-5.5c-2 1.3-4.6 2.1-7.9 2.1-6.4 0-11.8-4.1-13.7-9.8l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
-        Google로 계속하기
+        구글 로그인하고 티켓 구매
       </button>
+      <div class="notice">입금 확인은 <b>수동</b>으로 진행돼요. 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.</div>
       <div class="err" id="authErr"></div>
     </div>`;
   $("#loginBtn").onclick = login;
@@ -191,13 +193,14 @@ function renderOrderCard(o) {
         <div class="row"><span class="k">입금완료 신고</span><span class="v" style="color:var(--ok)">${new Date(o.paid_at).toLocaleString("ko-KR")}</span></div>
         <div class="row"><span class="k">상태</span><span class="v">관리자 확인 대기중</span></div>
       </div>
-      <p class="hint">입금 확인이 끝나면 이 화면에 바로 <b>입장 QR</b>이 떠요. 잠시만 기다려 주세요.</p>
+      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인이 끝나면 이 화면에 <b>입장 QR</b>이 자동으로 떠요. 잠시만 기다려 주세요.</div>
       <details style="margin-top:10px"><summary class="hint">입금 정보 다시 보기</summary>${paymentInstructionsHTML(o.method, o.amount)}</details>`;
   } else {
     body = `<p class="hint">아래 안내로 <b>${won(o.amount)}</b> 보낸 뒤 <b>‘입금 완료’</b>를 눌러주세요.<br/>동명이인 구분을 위해 완료 시각이 기록됩니다.</p>
       ${paymentInstructionsHTML(o.method, o.amount)}
       <button class="btn" data-pay="${o.id}">① 입금하기</button>
-      <button class="btn ghost" data-paid="${o.id}" id="paidBtn-${o.id}" disabled>② 입금 완료했어요</button>`;
+      <button class="btn ghost" data-paid="${o.id}" id="paidBtn-${o.id}" disabled>② 입금 완료했어요</button>
+      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>입장 QR</b>이 자동으로 떠요.</div>`;
   }
   return `<div class="card">
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
@@ -318,7 +321,7 @@ function mountBuyForm() {
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
       <button class="btn" id="submitBtn">예매하기 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <p class="hint center">예매 후 입금(송금)하면, 관리자가 확인하는 즉시 입장 QR이 생성됩니다.</p>
+      <div class="notice">예매 후 입금(송금)하고 <b>‘입금 완료’</b>를 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있고, 확인되면 <b>입장 QR</b>이 자동으로 떠요.</div>
       <div class="err" id="formErr"></div>
     </div>`;
 
