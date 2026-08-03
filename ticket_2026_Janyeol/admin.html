@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#140404" />
+  <title>자열 · 관리자 (입금 확인)</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h2 style="font-size:22px;font-weight:900;margin:6px 0 2px">🔥 자열 · 관리자</h2>
+    <div class="hint" style="margin-bottom:12px">입금을 확인하고 <b>입장 QR을 발급</b>합니다.</div>
+
+    <!-- 로그인 -->
+    <div id="gate" class="card">
+      <h2>🔐 관리자 로그인</h2>
+      <label class="fld">관리자 비밀번호</label>
+      <input id="pw" type="password" placeholder="비밀번호" />
+      <button class="btn" id="enterBtn">들어가기</button>
+      <div class="err" id="gateErr"></div>
+    </div>
+
+    <!-- 대시보드 -->
+    <div id="dash" class="hidden">
+      <div class="stats" id="stats"></div>
+      <div class="tabs" id="tabs">
+        <button data-f="pending" class="on">확인대기</button>
+        <button data-f="confirmed">발급완료</button>
+        <button data-f="used">입장완료</button>
+        <button data-f="all">전체</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <button class="btn ghost small" id="refreshBtn">↻ 새로고침</button>
+        <button class="btn ghost small" id="keyBtn">비밀번호 변경</button>
+        <button class="btn ghost small" id="logoutBtn">잠그기</button>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <div class="footer"><a href="index.html">← 예매 페이지</a> · <a href="check.html">입장 확인 →</a></div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
