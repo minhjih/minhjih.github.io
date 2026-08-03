@@ -228,6 +228,11 @@ select { appearance: none;
 .qr-meta { font-family: var(--f-serif); font-style: italic; font-weight: 700; margin-top: 8px; font-size: 19px; color: var(--cream); }
 
 .hint { color: var(--muted); font-size: 13px; margin-top: 8px; line-height: 1.65; }
+.notice { margin-top: 14px; background: rgba(232,165,60,.09); border: 1px solid rgba(232,165,60,.26); border-left: 3px solid var(--warn); border-radius: 10px; padding: 11px 13px; font-size: 12.5px; color: #e9c9a6; line-height: 1.65; text-align: left; }
+.notice b { color: #ffdca0; }
+.card.cta { border-color: rgba(255,122,26,.5); box-shadow: 0 0 0 1px rgba(255,90,20,.22), 0 22px 64px rgba(226,54,13,.3); }
+.buy-price { font-family: var(--f-serif); font-style: italic; font-weight: 700; font-size: 36px; color: var(--cream); line-height: 1; }
+.buy-price small { font-family: var(--f-body); font-style: normal; font-weight: 700; font-size: 13px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-left: 6px; }
 .err { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 1em; }
 .center { text-align: center; }
 .hidden { display: none !important; }
