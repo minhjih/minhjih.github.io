@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#140404" />
+  <title>자열 (自熱) · 공연 티켓</title>
+  <meta name="description" content="자열 공연 티켓 예매 — 8.29 5:30PM · 001 라이브홀" />
+  <meta property="og:title" content="자열 (自熱) · 공연 티켓" />
+  <meta property="og:description" content="8.29 (금) 5:30PM · 001 라이브홀 · 7,000원" />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <!-- 포스터 -->
+    <div class="hero">
+      <img id="posterMain" class="poster" alt="자열 공연 포스터" />
+      <div id="posterFallback" class="poster-fallback hidden">
+        <p class="big">자열</p>
+        <div class="sub">自熱 · RIZZ · 심사숙곰 · 브레멘</div>
+        <span class="chip" id="fbDate">8.29 (금) 5:30PM</span>
+      </div>
+    </div>
+
+    <div class="badges">
+      <span class="badge">📅 <b id="bDate">8.29 (금) 5:30PM</b></span>
+      <span class="badge">📍 <b id="bVenue">001 라이브홀</b></span>
+      <span class="badge">🎟 <b id="bPrice">7,000원</b></span>
+    </div>
+    <div class="hint" id="bAddr" style="margin-left:4px"></div>
+
+    <!-- 내 티켓 / 로그인 / 구매 -->
+    <div id="ticketArea"></div>
+
+    <!-- 큐시트 -->
+    <div class="section-title">TIMETABLE · 큐시트</div>
+    <div class="card">
+      <img id="posterCue" class="poster" style="margin-bottom:14px" alt="자열 큐시트" />
+      <div id="cueList"></div>
+    </div>
+
+    <div class="footer">
+      자열 · 001 라이브홀 · <span id="fAddr"></span>
+      <div class="lnkrow">
+        <a href="admin.html">관리자</a>
+        <a href="check.html">입장 확인</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"
+    onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';document.head.appendChild(s);"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

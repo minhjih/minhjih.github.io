@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#140404" />
+  <title>자열 · 입장 확인 (QR 스캔)</title>
+  <meta name="robots" content="noindex" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h2 style="font-size:22px;font-weight:900;margin:6px 0 2px">🎫 자열 · 입장 확인</h2>
+    <div class="hint" style="margin-bottom:12px">QR을 비추면 자동으로 확인됩니다. 확인된 QR은 <b>즉시 만료</b>됩니다.</div>
+
+    <div id="gate" class="card">
+      <h2>🔐 확인자 로그인</h2>
+      <label class="fld">확인자(입구) 비밀번호</label>
+      <input id="pw" type="password" placeholder="비밀번호" />
+      <label class="fld">확인자 이름 (선택)</label>
+      <input id="who" placeholder="예: 입구1" />
+      <button class="btn" id="enterBtn">시작</button>
+      <div class="err" id="gateErr"></div>
+    </div>
+
+    <div id="scan" class="hidden">
+      <div class="card">
+        <div id="reader"></div>
+        <div id="result"></div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn" id="nextBtn" style="margin:0">다음 스캔 ▶</button>
+          <button class="btn ghost small" id="camBtn" style="margin:0">카메라 전환</button>
+        </div>
+        <details style="margin-top:12px">
+          <summary class="hint">QR이 안 읽힐 때 · 코드 직접 입력</summary>
+          <input id="manual" placeholder="QR 토큰(UUID) 붙여넣기" style="margin-top:8px" />
+          <button class="btn ghost small" id="manualBtn" style="margin-top:8px">확인</button>
+        </details>
+        <button class="btn ghost small" id="logoutBtn" style="margin-top:12px">잠그기</button>
+      </div>
+    </div>
+
+    <div class="footer"><a href="index.html">← 예매 페이지</a> · <a href="admin.html">관리자 →</a></div>
+  </div>
+  <div id="toast" class="toast"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
+    onerror="var s=document.createElement('script');s.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';document.head.appendChild(s);"></script>
+  <script src="config.js"></script>
+  <script src="check.js"></script>
+</body>
+</html>
