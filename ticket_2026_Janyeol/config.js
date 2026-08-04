@@ -37,10 +37,12 @@ window.JANYEOL_CONFIG = {
     holder: "최재현",
     tossBankCode: "TOSS",
   },
-  // 뱅킹앱 송금 QR (토스·카카오뱅크 등에서 스캔). 계좌는 위 BANK 사용.
+  // 송금 QR (휴대폰 카메라로 스캔). 계좌는 위 BANK 사용.
   // img/transfer-qr.png 파일을 넣으면 QR 이미지가 표시됩니다(없어도 계좌번호로 동작).
+  // link: 그 QR이 담고 있는 링크(클릭 시 팝업으로 열림).
   TRANSFER: {
     qrImage: "img/transfer-qr.png",
+    link: "https://free4qr.com/qr-result#b=092&a=1002-7029-2183&h=%EC%B5%9C%EC%9E%AC%ED%98%84",
   },
 
   // ----- 포스터 이미지 (img/ 폴더에 넣기) -----

@@ -329,7 +329,8 @@ function paymentInstructionsHTML(method, amount) {
   if (method === "qr") {
     return `<div class="pay-box">
       ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
-      <p class="hint center">토스·카카오뱅크 등 <b>뱅킹앱으로 이 QR을 스캔</b>해 송금하세요.</p>` : ""}
+      <p class="hint center"><b>휴대폰 카메라로 이 QR을 스캔</b>해 송금하세요.</p>
+      ${T.link ? `<p class="hint center">위 QR에 대한 링크는 <a href="${esc(T.link)}" target="_blank" rel="noopener"><b>여기</b></a> 입니다.</p>` : ""}` : ""}
       <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
       <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
         <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
