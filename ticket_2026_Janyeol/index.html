@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -12,19 +13,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700;1,900&family=Noto+Serif+KR:wght@600;700;900&display=swap" />
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Noto+Serif+KR:wght@600;700;900&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600;1,700;1,900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
-  <div class="sun-stage" aria-hidden="true"><div class="sun"></div></div>
+  <div class="sun-stage" aria-hidden="true">
+    <div class="sun"></div>
+  </div>
   <div class="sun-flare" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
   <svg class="svg-defs" aria-hidden="true">
     <filter id="heat" x="-25%" y="-25%" width="150%" height="150%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.010 0.016" numOctaves="2" seed="7" result="n">
-        <animate attributeName="baseFrequency" dur="18s" values="0.010 0.016;0.014 0.024;0.009 0.018;0.010 0.016" repeatCount="indefinite" />
-      </feTurbulence>
+      <feTurbulence type="fractalNoise" baseFrequency="0.010 0.016" numOctaves="2" seed="7" result="n" />
       <feDisplacementMap in="SourceGraphic" in2="n" scale="30" xChannelSelector="R" yChannelSelector="G" />
     </filter>
   </svg>
@@ -34,11 +38,12 @@
       <p class="kicker">Live Concert</p>
       <div class="poster-frame"><img id="posterMain" class="poster" alt="잔열 공연 포스터" /></div>
       <div id="titleStack" class="brand hidden">
-        <span class="mark">잔열<span class="echo e1">잔열</span><span class="echo e2">잔열</span><span class="echo e3">잔열</span></span>
+        <span class="mark">잔열<span class="echo e1">잔열</span><span class="echo e2">잔열</span><span
+            class="echo e3">잔열</span></span>
       </div>
 
       <div class="meta">
-        <div class="date" id="bDate">8.29 (금) 5:30PM</div>
+        <div class="date" id="bDate">8.29 (토) 5:30PM</div>
         <div class="venue" id="bVenue">001 라이브홀</div>
         <div class="addr" id="bAddr"></div>
         <hr class="rule" />
@@ -57,6 +62,28 @@
       <div id="cueList"></div>
     </div>
 
+    <!-- 오시는 길 (지도) -->
+    <div class="eyebrow">Location</div>
+    <div class="card">
+      <h2 style="margin-bottom:12px">001 라이브홀 <span
+          style="font-weight:400;font-size:12px;color:var(--muted);margin-left:auto;text-transform:none">서울 마포구 월드컵로 140
+          지하1층</span></h2>
+      <div style="margin-bottom:12px; display:flex; gap:8px;">
+        <a href="https://naver.me/GhwytGNy" target="_blank" rel="noopener noreferrer" class="map-btn naver">
+          네이버 지도로 열기
+        </a>
+        <a href="https://place.map.kakao.com/936488916" target="_blank" rel="noopener noreferrer" class="map-btn kakao">
+          카카오맵으로 열기
+        </a>
+      </div>
+      <div class="map-container">
+        <img src="img/enter.jpg" alt="001 라이브홀 입구"
+          style="width:100%; height:auto; border-radius:10px; display:block; border:1px solid var(--line-2);" />
+      </div>
+      <p class="hint" style="margin-top:10px; font-size:12px; color:var(--gold);">⚠️ *001클럽(홍대)과 다른 장소입니다 (마포구 월드컵로 140
+        지하1층)</p>
+    </div>
+
     <div class="footer">
       잔열 殘熱 · 001 라이브홀 · <span id="fAddr"></span>
     </div>
@@ -67,7 +94,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"
     onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';document.head.appendChild(s);"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>
