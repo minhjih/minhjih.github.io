@@ -7,6 +7,8 @@ window.JANYEOL_CONFIG = {
   // 개발자/테스트용 (true로 설정 시 구글 로그인 없이도 바로 티켓 예매 폼 활성화)
   // 배포 시 false로 변경하세요.
   DEV_MODE: false,
+  // 개발자/테스트용 입금 확인 완료 가정 (true 설정 시 테스트 티켓 QR이 바로 표시됨)
+  DEV_AUTO_CONFIRM: false,
 
   // ----- Supabase (데이터/인증) -----
   SUPABASE_URL: "https://gppwawgyoysctikujmed.supabase.co",

@@ -27,7 +27,7 @@
 
   --r: 14px;
   --r-sm: 10px;
-  --maxw: 380px;
+  --maxw: 600px;
   --ease: cubic-bezier(.2, .7, .2, 1);
 
   --f-display: "Black Han Sans", "Pretendard", sans-serif;
@@ -248,9 +248,9 @@ select { appearance: none;
 .tech-field .lbl { font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: normal; text-transform: uppercase; color: #666; margin-bottom: 2px; }
 .tech-field .val { font-family: var(--f-mono); font-size: 13px; font-weight: 700; letter-spacing: normal; color: #000; word-break: break-all; }
 
-.tech-qr-section { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 0 4px; background: #ffffff; border: 1px solid #e2e2e2; border-radius: 8px; }
-.tech-qr-box { padding: 8px; background: #fff; display: inline-block; }
-.tech-qr-box img, .tech-qr-box canvas { display: block; width: 180px !important; height: 180px !important; margin: 0 auto; }
+.tech-qr-section { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 0 6px; background: #f4f4f4; border: 1px solid #d8d8d8; border-radius: 8px; }
+.tech-qr-box { padding: 6px; background: #f4f4f4; display: inline-block; }
+.tech-qr-box img, .tech-qr-box canvas { display: block; width: 180px !important; height: 180px !important; margin: 0 auto; mix-blend-mode: multiply; }
 .tech-barcode { font-family: var(--f-mono); font-size: 11px; letter-spacing: normal; font-weight: 700; color: #222; margin-top: 8px; }
 
 .tech-ticket-foot { font-family: var(--f-mono); letter-spacing: normal; display: flex; justify-content: space-between; align-items: center; margin-top: 14px; pt-3; border-top: 1px solid #e0e0e0; font-size: 9.5px; color: #777; font-weight: 600; }

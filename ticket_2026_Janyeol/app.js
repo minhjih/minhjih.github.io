@@ -206,7 +206,7 @@ function renderOrderCard(o) {
         </div>
         <div class="tech-ticket-grid">
           <div class="tech-field">
-            <span class="lbl">PASSENGER / BUYER</span>
+            <span class="lbl">NAME</span>
             <span class="val">${esc(o.buyer_name)}</span>
           </div>
           <div class="tech-field">
@@ -214,7 +214,7 @@ function renderOrderCard(o) {
             <span class="val">${o.quantity}인 (${won(o.amount)})</span>
           </div>
           <div class="tech-field">
-            <span class="lbl">GATE / VENUE</span>
+            <span class="lbl">VENUE</span>
             <span class="val">${esc(EV.venue || "001 HALL")}</span>
           </div>
           <div class="tech-field">
@@ -224,10 +224,9 @@ function renderOrderCard(o) {
         </div>
         <div class="tech-qr-section">
           <div class="tech-qr-box" id="qr-${o.id}"></div>
-          <div class="tech-barcode">SYS-ID #${esc(o.id.toString().slice(-8).toUpperCase())}</div>
+          <div class="tech-barcode">CODE: ${esc(o.qr_token)}</div>
         </div>
         <div class="tech-ticket-foot">
-          <span>CODE: ${esc(o.qr_token)}</span>
           <span>JANYEOL LIVE 2026</span>
         </div>
       </div>
@@ -268,7 +267,7 @@ function drawQR(elId, text) {
     width: 180,
     height: 180,
     colorDark: "#000000",
-    colorLight: "#ffffff",
+    colorLight: "#f4f4f4",
     correctLevel: window.QRCode.CorrectLevel.H,
   });
 }
