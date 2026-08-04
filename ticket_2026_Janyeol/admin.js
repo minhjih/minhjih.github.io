@@ -79,11 +79,6 @@ function renderStats(s) {
 
 function renderList() {
   const list = ORDERS.filter((o) => (FILTER === "all" ? o.status !== "cancelled" : o.status === FILTER));
-  if (FILTER === "pending") {
-    // 입금완료 신고한 주문을 위로 (신고 시각 최신순)
-    list.sort((a, b) => (b.paid_at ? 1 : 0) - (a.paid_at ? 1 : 0) ||
-      (new Date(b.paid_at || 0).getTime() - new Date(a.paid_at || 0).getTime()));
-  }
   if (!list.length) {
     $("#list").innerHTML = `<div class="card center hint">해당 항목이 없습니다.</div>`;
     return;
@@ -122,9 +117,6 @@ function card(o) {
       <div class="meta">
         받는분 ${esc(o.buyer_name)}${o.phone ? " · " + esc(o.phone) : ""}<br/>
         <span style="font-weight:700;color:${o.channel === "onsite" ? "var(--gold)" : "var(--muted)"}">${o.channel === "onsite" ? "현매" : "예매"}</span> · <b style="color:var(--gold)">${won(o.amount)}</b> · ${methodLabel(o.method)} · ${fmt(o.created_at)}<br/>
-        ${o.paid_at
-          ? `<span style="color:var(--ok);font-weight:700">입금완료 신고 · ${fmt(o.paid_at)}</span>`
-          : `<span style="color:var(--dim)">입금완료 미신고</span>`}<br/>
         <span style="color:var(--dim);font-size:12px">${esc(o.email || "")}</span>
       </div>
       <div class="acts">${acts}</div>
@@ -153,7 +145,7 @@ function exportCsv() {
   const cols = [
     ["channel", "구분"], ["status", "상태"], ["buyer_name", "이름"], ["depositor_name", "입금자명"],
     ["phone", "연락처"], ["email", "이메일(구글)"], ["quantity", "수량"], ["amount", "금액"],
-    ["method", "결제수단"], ["paid_at", "입금완료신고"], ["created_at", "주문시각"],
+    ["method", "결제수단"], ["created_at", "주문시각"],
     ["confirmed_at", "입금확인시각"], ["used_at", "입장시각"], ["checked_by", "확인자"],
   ];
   const cell = (v) => {
