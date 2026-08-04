@@ -193,10 +193,12 @@ function renderOrderCard(o) {
         <div class="row"><span class="k">입금완료 신고</span><span class="v" style="color:var(--ok)">${new Date(o.paid_at).toLocaleString("ko-KR")}</span></div>
         <div class="row"><span class="k">상태</span><span class="v">관리자 확인 대기중</span></div>
       </div>
+      ${depositReminder(o.amount)}
       <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인이 끝나면 이 화면에 <b>입장 QR</b>이 자동으로 떠요. 잠시만 기다려 주세요.</div>
-      <details style="margin-top:10px"><summary class="hint">입금 정보 다시 보기</summary>${paymentInstructionsHTML(o.method, o.amount)}</details>`;
+      <details style="margin-top:10px"><summary class="hint">계좌·QR 다시 보기</summary>${paymentInstructionsHTML(o.method, o.amount)}</details>`;
   } else {
-    body = `<p class="hint">아래 안내로 <b>${won(o.amount)}</b> 보낸 뒤 <b>‘입금 완료’</b>를 눌러주세요.<br/>동명이인 구분을 위해 완료 시각이 기록됩니다.</p>
+    body = `${depositReminder(o.amount)}
+      <p class="hint">보낸 뒤 <b>‘입금 완료’</b>를 눌러주세요. 동명이인 구분을 위해 완료 시각이 기록됩니다.</p>
       ${paymentInstructionsHTML(o.method, o.amount)}
       <button class="btn" data-pay="${o.id}">① 입금하기</button>
       <button class="btn ghost" data-paid="${o.id}" id="paidBtn-${o.id}" disabled>② 입금 완료했어요</button>
@@ -264,6 +266,18 @@ function wireOrderActions(orders) {
 
 // ---------------- 결제 안내 ----------------
 const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : "계좌이체");
+
+// 입금 전이면 어디로 얼마 보내야 하는지 명확히 (QR 발급 전까지 계속 노출)
+function depositReminder(amount) {
+  const B = CFG.BANK || {};
+  const acct = B.bank && B.account
+    ? `${esc(B.bank)} ${esc(B.account)}${B.holder ? ` (${esc(B.holder)})` : ""}`
+    : "";
+  return `<div class="notice" style="border-left-color:var(--gold);background:rgba(230,165,60,.12)">
+      아직 입금 전이라면 <b>${acct}</b> 로 <b>${won(amount)}</b> 입금해 주세요.<br/>
+      입금이 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.
+    </div>`;
+}
 
 function paymentInstructionsHTML(method, amount) {
   const B = CFG.BANK || {};
