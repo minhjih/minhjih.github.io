@@ -37,7 +37,7 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden !important; }
+html, body { margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden !important; touch-action: pan-y; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   min-height: 100vh; background: var(--bg); color: var(--ink);
