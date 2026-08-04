@@ -99,15 +99,22 @@ function renderLoggedOut() {
         <li>당일날 QR을 제시해주시면 입장할 수 있어요.</li>
         <li>입금 확인은 <b>수동</b>으로 진행되어, 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요.</li>
       </ul>
-      <button class="btn google" id="loginBtn">
+      <div id="gsiWrap" class="center" style="display:flex;justify-content:center;min-height:44px;margin-top:16px"></div>
+      <button class="btn google" id="loginBtn" style="display:none">
+
         <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.1 0 24 0 14.6 0 6.4 5.4 2.6 13.2l7.8 6.1C12.2 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.5z"/><path fill="#FBBC05" d="M10.4 28.3c-.5-1.4-.8-2.9-.8-4.3s.3-3 .8-4.3l-7.8-6.1C.9 16.7 0 20.2 0 24s.9 7.3 2.6 10.4l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.1-5.5c-2 1.3-4.6 2.1-7.9 2.1-6.4 0-11.8-4.1-13.7-9.8l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
         구글 로그인하고 티켓 구매
       </button>
       <div class="err" id="authErr"></div>
     </div>`;
   $("#loginBtn").onclick = login;
+  // 구글 Client ID가 있으면 네이티브(GIS) 버튼, 없으면 리다이렉트 버튼으로 폴백
+  mountGoogle($("#gsiWrap")).then((ok) => {
+    if (!ok) $("#loginBtn").style.display = "";
+  });
 }
 
+// 리다이렉트 방식(폴백): supabase.co 화면을 거침
 async function login() {
   $("#authErr").textContent = "";
   const { error } = await sb.auth.signInWithOAuth({
@@ -115,6 +122,50 @@ async function login() {
     options: { redirectTo: location.href.split("#")[0].split("?")[0] },
   });
   if (error) $("#authErr").textContent = "로그인 오류: " + error.message;
+}
+
+// 네이티브 방식(GIS + ID 토큰): 우리 사이트에서 바로 구글 계정 선택 (supabase.co 노출 X)
+async function sha256hex(s) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function mountGoogle(container) {
+  const CID = CFG.GOOGLE_CLIENT_ID || "";
+  if (!CID || !container) return false;
+  let tries = 0;
+  while (!(window.google && google.accounts && google.accounts.id) && tries < 30) {
+    await new Promise((r) => setTimeout(r, 150));
+    tries++;
+  }
+  if (!(window.google && google.accounts && google.accounts.id)) return false;
+  try {
+    const rawNonce = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
+    const hashedNonce = await sha256hex(rawNonce);
+    google.accounts.id.initialize({
+      client_id: CID,
+      nonce: hashedNonce,
+      auto_select: false,
+      use_fedcm_for_prompt: true,
+      callback: async (resp) => {
+        $("#authErr").textContent = "";
+        const { error } = await sb.auth.signInWithIdToken({
+          provider: "google",
+          token: resp.credential,
+          nonce: rawNonce,
+        });
+        if (error) $("#authErr").textContent = "로그인 오류: " + error.message;
+      },
+    });
+    container.innerHTML = "";
+    google.accounts.id.renderButton(container, {
+      type: "standard", theme: "filled_blue", size: "large",
+      text: "continue_with", shape: "pill", logo_alignment: "center",
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 // ---------------- 렌더: 로그인 후 ----------------

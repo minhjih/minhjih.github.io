@@ -18,6 +18,11 @@ window.JANYEOL_CONFIG = {
   // 관리자/확인자 백엔드 (엣지 함수 이름) — 비밀번호는 Supabase DB(tk_config)에만 저장
   DESK_FUNCTION: "janyeol-desk",
 
+  // 구글 로그인 — Google Cloud의 웹 OAuth "클라이언트 ID"(xxx.apps.googleusercontent.com)를 넣으면
+  // 우리 사이트에서 바로 구글 계정 선택창이 뜹니다(중간에 supabase.co 도메인 노출 X).
+  // 비워두면 기존 리다이렉트 방식으로 동작(로그인은 되지만 supabase.co 화면을 거침).
+  GOOGLE_CLIENT_ID: "",
+
   // ----- 공연 정보 -----
   EVENT: {
     title: "잔열",
