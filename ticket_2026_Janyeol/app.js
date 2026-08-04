@@ -153,7 +153,6 @@ async function renderLoggedIn(user) {
     active.forEach((o) => {
       if (o.status === "confirmed" && o.qr_token) drawQR(`qr-${o.id}`, o.qr_token);
     });
-    wireOrderActions(active);
     $("#addMore").onclick = () => {
       $("#addMore").classList.add("hidden");
       $("#buyMount").classList.remove("hidden");
@@ -188,21 +187,14 @@ function renderOrderCard(o) {
         <div class="qr-meta" style="font-size:26px">입장 완료</div>
         <div class="qr-note">ENTERED · ${o.used_at ? new Date(o.used_at).toLocaleString("ko-KR") : ""}</div>
       </div>`;
-  } else if (o.paid_at) {
-    body = `<div class="pay-box" style="border-color:rgba(74,217,145,.4)">
-        <div class="row"><span class="k">입금완료 신고</span><span class="v" style="color:var(--ok)">${new Date(o.paid_at).toLocaleString("ko-KR")}</span></div>
-        <div class="row"><span class="k">상태</span><span class="v">관리자 확인 대기중</span></div>
+  } else {
+    body = `<div class="center" style="padding:6px 0 2px">
+        <div class="qr-meta" style="font-size:22px">입장 QR 대기중</div>
+        <div class="qr-note">입금이 확인되면 QR이 여기에 자동으로 떠요.</div>
       </div>
       ${depositReminder(o.amount)}
-      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인이 끝나면 이 화면에 <b>입장 QR</b>이 자동으로 떠요. 잠시만 기다려 주세요.</div>
-      <details style="margin-top:10px"><summary class="hint">계좌·QR 다시 보기</summary>${paymentInstructionsHTML(o.method, o.amount)}</details>`;
-  } else {
-    body = `${depositReminder(o.amount)}
-      <p class="hint">보낸 뒤 <b>‘입금 완료’</b>를 눌러주세요. 동명이인 구분을 위해 완료 시각이 기록됩니다.</p>
       ${paymentInstructionsHTML(o.method, o.amount)}
-      <button class="btn" data-pay="${o.id}">① 입금하기</button>
-      <button class="btn ghost" data-paid="${o.id}" id="paidBtn-${o.id}" disabled>② 입금 완료했어요</button>
-      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>입장 QR</b>이 자동으로 떠요.</div>`;
+      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.</div>`;
   }
   return `<div class="card">
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
@@ -226,41 +218,6 @@ function drawQR(elId, text) {
     colorDark: "#111111",
     colorLight: "#ffffff",
     correctLevel: window.QRCode.CorrectLevel.M,
-  });
-}
-
-// ---------------- 입금하기 / 입금완료 신고 ----------------
-function wireOrderActions(orders) {
-  orders.forEach((o) => {
-    if (o.status !== "pending" || o.paid_at) return;
-    const payBtn = document.querySelector(`[data-pay="${o.id}"]`);
-    const paidBtn = document.getElementById(`paidBtn-${o.id}`);
-    if (payBtn)
-      payBtn.onclick = () => {
-        const B = CFG.BANK || {};
-        if (o.method === "qr") {
-          toast("위 QR을 뱅킹앱으로 스캔해 송금하세요");
-        } else {
-          const acc = (B.account || "").replace(/[^0-9]/g, "");
-          if (acc && navigator.clipboard) navigator.clipboard.writeText(acc).catch(() => {});
-          toast("계좌번호를 복사했어요");
-        }
-        if (paidBtn) { paidBtn.disabled = false; paidBtn.classList.remove("ghost"); }
-      };
-    if (paidBtn)
-      paidBtn.onclick = async () => {
-        paidBtn.disabled = true;
-        paidBtn.textContent = "처리 중…";
-        const { error } = await sb.from("tk_orders").update({ paid_at: new Date().toISOString() }).eq("id", o.id);
-        if (error) {
-          paidBtn.disabled = false;
-          paidBtn.textContent = "② 입금 완료했어요";
-          toast("실패: " + error.message);
-          return;
-        }
-        toast("입금 완료를 알렸어요");
-        await refresh();
-      };
   });
 }
 
@@ -326,7 +283,7 @@ function mountBuyForm() {
         <button type="button" data-m="qr">뱅킹앱 QR</button>
       </div>
 
-      <label class="fld">입금자명 * <span style="font-weight:400;color:var(--dim)">(계좌/카카오에 찍히는 이름)</span></label>
+      <label class="fld">입금자명 * <span style="font-weight:400;color:var(--dim)">(통장/뱅킹앱에 찍히는 이름)</span></label>
       <input id="fDep" placeholder="입금자 이름" value="${esc(prefill)}" />
 
       <label class="fld">수량 *</label>
@@ -337,11 +294,12 @@ function mountBuyForm() {
         <span class="hint" style="margin:0 0 0 6px">최대 ${MAXQ}인</span>
       </div>
 
+      <label class="fld">여기로 송금해 주세요</label>
       <div id="payArea"></div>
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
-      <button class="btn" id="submitBtn">예매하기 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <div class="notice">예매 후 입금(송금)하고 <b>‘입금 완료’</b>를 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있고, 확인되면 <b>입장 QR</b>이 자동으로 떠요.</div>
+      <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE)}</span></button>
+      <div class="notice">위 계좌로 송금한 뒤 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있고, 확인되면 <b>입장 QR</b>이 자동으로 떠요.</div>
       <div class="err" id="formErr"></div>
     </div>`;
 
@@ -400,7 +358,7 @@ async function submitOrder() {
 
   const btn = $("#submitBtn");
   btn.disabled = true;
-  btn.textContent = "예매 중…";
+  btn.textContent = "접수 중…";
 
   const { error } = await sb.from("tk_orders").insert({
     email: CURRENT_USER.email,
@@ -415,11 +373,11 @@ async function submitOrder() {
 
   if (error) {
     btn.disabled = false;
-    btn.textContent = "예매하기";
-    err.textContent = "예매 실패: " + error.message;
+    btn.textContent = "입금 완료했어요";
+    err.textContent = "접수 실패: " + error.message;
     return;
   }
-  toast("예매 완료! 입금 확인을 기다려주세요.");
+  toast("접수 완료! 입금 확인을 기다려주세요.");
   await refresh();
 }
 
