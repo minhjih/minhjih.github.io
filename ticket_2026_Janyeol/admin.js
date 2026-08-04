@@ -144,6 +144,43 @@ async function act(action, id, btn) {
   }
 }
 
+// ---------- 명단 CSV 내보내기 ----------
+function exportCsv() {
+  if (!ORDERS.length) return toast("내보낼 명단이 없어요");
+  const STL = { pending: "확인대기", confirmed: "발급완료", used: "입장완료", cancelled: "취소" };
+  const cols = [
+    ["status", "상태"], ["buyer_name", "이름"], ["depositor_name", "입금자명"],
+    ["phone", "연락처"], ["email", "이메일(구글)"], ["quantity", "수량"], ["amount", "금액"],
+    ["method", "결제수단"], ["paid_at", "입금완료신고"], ["created_at", "주문시각"],
+    ["confirmed_at", "입금확인시각"], ["used_at", "입장시각"], ["checked_by", "확인자"],
+  ];
+  const cell = (v) => {
+    let s = v == null ? "" : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = [cols.map((c) => c[1]).join(",")];
+  ORDERS.forEach((o) => {
+    rows.push(cols.map(([k]) => {
+      if (k === "status") return cell(STL[o.status] || o.status);
+      if (k === "method") return cell(o.method === "kakao" ? "카카오페이" : "계좌이체");
+      if (["paid_at", "created_at", "confirmed_at", "used_at"].includes(k)) return cell(fmt(o[k]));
+      return cell(o[k]);
+    }).join(","));
+  });
+  const csv = "﻿" + rows.join("\r\n"); // BOM: 엑셀 한글 깨짐 방지
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const today = new Date().toLocaleDateString("sv").replace(/-/g, ""); // YYYYMMDD
+  a.href = url;
+  a.download = `janyeol_명단_${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast(`${ORDERS.length}건 CSV 내보냄`);
+}
+
 // ---------- 비밀번호 변경 ----------
 async function changeKeys() {
   const na = prompt("새 관리자 비밀번호 (비우면 유지):", "");
@@ -163,6 +200,7 @@ async function changeKeys() {
 $("#enterBtn").onclick = enter;
 $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); });
 $("#refreshBtn").onclick = load;
+$("#csvBtn").onclick = exportCsv;
 $("#keyBtn").onclick = changeKeys;
 $("#logoutBtn").onclick = () => { sessionStorage.removeItem("janyeol_admin_key"); location.reload(); };
 $("#tabs").querySelectorAll("button").forEach((b) => {
