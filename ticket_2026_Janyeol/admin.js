@@ -11,6 +11,7 @@ const esc = (s) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
 const fmt = (t) => (t ? new Date(t).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
+const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : m === "kakao" ? "카카오페이" : "계좌이체");
 
 let KEY = sessionStorage.getItem("janyeol_admin_key") || "";
 let FILTER = "pending";
@@ -72,7 +73,8 @@ function renderStats(s) {
   $("#stats").innerHTML = `
     <div class="stat"><div class="v">${s.pending || 0}</div><div class="l">확인대기</div></div>
     <div class="stat"><div class="v">${(s.confirmed || 0) + (s.used || 0)}</div><div class="l">발급/입장</div></div>
-    <div class="stat"><div class="v">${won(s.revenue || 0)}</div><div class="l">확정 매출 · ${s.people || 0}인</div></div>`;
+    <div class="stat"><div class="v">${won(s.revenue || 0)}</div><div class="l">확정 매출 · ${s.people || 0}인</div></div>
+    <div class="stat" style="grid-column:1/-1"><div class="v" style="font-size:17px">예매 ${s.presale_people || 0}인 · 현매 ${s.onsite_people || 0}인</div><div class="l">입장 확정 인원 구성</div></div>`;
 }
 
 function renderList() {
@@ -119,7 +121,7 @@ function card(o) {
       </div>
       <div class="meta">
         받는분 ${esc(o.buyer_name)}${o.phone ? " · " + esc(o.phone) : ""}<br/>
-        <b style="color:var(--gold)">${won(o.amount)}</b> · ${o.method === "kakao" ? "카카오페이" : "계좌이체"} · 주문 ${fmt(o.created_at)}<br/>
+        <span style="font-weight:700;color:${o.channel === "onsite" ? "var(--gold)" : "var(--muted)"}">${o.channel === "onsite" ? "현매" : "예매"}</span> · <b style="color:var(--gold)">${won(o.amount)}</b> · ${methodLabel(o.method)} · ${fmt(o.created_at)}<br/>
         ${o.paid_at
           ? `<span style="color:var(--ok);font-weight:700">입금완료 신고 · ${fmt(o.paid_at)}</span>`
           : `<span style="color:var(--dim)">입금완료 미신고</span>`}<br/>
@@ -144,6 +146,44 @@ async function act(action, id, btn) {
   }
 }
 
+// ---------- 명단 CSV 내보내기 ----------
+function exportCsv() {
+  if (!ORDERS.length) return toast("내보낼 명단이 없어요");
+  const STL = { pending: "확인대기", confirmed: "발급완료", used: "입장완료", cancelled: "취소" };
+  const cols = [
+    ["channel", "구분"], ["status", "상태"], ["buyer_name", "이름"], ["depositor_name", "입금자명"],
+    ["phone", "연락처"], ["email", "이메일(구글)"], ["quantity", "수량"], ["amount", "금액"],
+    ["method", "결제수단"], ["paid_at", "입금완료신고"], ["created_at", "주문시각"],
+    ["confirmed_at", "입금확인시각"], ["used_at", "입장시각"], ["checked_by", "확인자"],
+  ];
+  const cell = (v) => {
+    let s = v == null ? "" : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const rows = [cols.map((c) => c[1]).join(",")];
+  ORDERS.forEach((o) => {
+    rows.push(cols.map(([k]) => {
+      if (k === "channel") return cell(o.channel === "onsite" ? "현매" : "예매");
+      if (k === "status") return cell(STL[o.status] || o.status);
+      if (k === "method") return cell(methodLabel(o.method));
+      if (["paid_at", "created_at", "confirmed_at", "used_at"].includes(k)) return cell(fmt(o[k]));
+      return cell(o[k]);
+    }).join(","));
+  });
+  const csv = "﻿" + rows.join("\r\n"); // BOM: 엑셀 한글 깨짐 방지
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const today = new Date().toLocaleDateString("sv").replace(/-/g, ""); // YYYYMMDD
+  a.href = url;
+  a.download = `janyeol_명단_${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast(`${ORDERS.length}건 CSV 내보냄`);
+}
+
 // ---------- 비밀번호 변경 ----------
 async function changeKeys() {
   const na = prompt("새 관리자 비밀번호 (비우면 유지):", "");
@@ -163,6 +203,7 @@ async function changeKeys() {
 $("#enterBtn").onclick = enter;
 $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); });
 $("#refreshBtn").onclick = load;
+$("#csvBtn").onclick = exportCsv;
 $("#keyBtn").onclick = changeKeys;
 $("#logoutBtn").onclick = () => { sessionStorage.removeItem("janyeol_admin_key"); location.reload(); };
 $("#tabs").querySelectorAll("button").forEach((b) => {

@@ -4,6 +4,8 @@
 // ===================================================================
 const CFG = window.JANYEOL_CONFIG || {};
 const FN_URL = `${CFG.SUPABASE_URL}/functions/v1/${CFG.DESK_FUNCTION || "janyeol-desk"}`;
+const PRICE = Number((CFG.EVENT || {}).price || 0);
+const won = (n) => Number(n || 0).toLocaleString("ko-KR") + "원";
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) =>
   String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
@@ -147,8 +149,40 @@ async function enter() {
   }
 }
 
+// ---------- 현매 추가 (Walk-in) ----------
+let wQty = 1;
+function setWQty(q) {
+  wQty = Math.max(1, Math.min(10, q));
+  const n = $("#wN"); if (n) n.textContent = wQty;
+  const a = $("#wAmt"); if (a) a.textContent = PRICE ? `현금 ${won(PRICE * wQty)}` : "";
+}
+async function addWalkin() {
+  const name = $("#wName").value.trim();
+  const phone = $("#wPhone").value.trim();
+  $("#wErr").textContent = "";
+  if (!name) { $("#wErr").textContent = "이름을 입력해주세요."; return; }
+  const btn = $("#wAddBtn");
+  const old = btn.textContent;
+  btn.disabled = true; btn.textContent = "처리 중…";
+  try {
+    const r = await desk("onsite", { name, phone: phone || null, quantity: wQty, amount: PRICE * wQty, by: WHO || "확인자" });
+    const o = r.order || {};
+    $("#wResult").innerHTML = `<div class="result ok" style="margin-top:12px"><p class="big">현매 입장<span class="en">Walk-in Added</span></p><div class="who">${esc(o.buyer_name || name)} · ${o.quantity || wQty}인</div></div>`;
+    beep(true); navigator.vibrate(120);
+    $("#wName").value = ""; $("#wPhone").value = ""; setWQty(1);
+    toast("현매 입장 처리 완료");
+  } catch (e) {
+    $("#wErr").textContent = "실패: " + e.message;
+  }
+  btn.disabled = false; btn.textContent = old;
+}
+
 // ---------- 이벤트 ----------
 $("#enterBtn").onclick = enter;
+$("#wMinus").onclick = () => setWQty(wQty - 1);
+$("#wPlus").onclick = () => setWQty(wQty + 1);
+$("#wAddBtn").onclick = addWalkin;
+setWQty(1);
 $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); });
 $("#nextBtn").onclick = nextScan;
 $("#camBtn").onclick = switchCamera;
