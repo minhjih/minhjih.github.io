@@ -49,7 +49,7 @@ Supabase 대시보드 → **Authentication → Sign In / Providers → Google**
 `config.js` 를 열어 실제 정보로 수정 → 깃허브에 커밋/푸시:
 
 - `BANK`: 입금 받을 **은행 / 계좌번호 / 예금주**
-- `KAKAO.link`: 카카오페이 **송금 링크**(있으면), 또는 `img/kakaopay.png` 에 송금 QR 캡처
+- `TRANSFER.qrImage`: 뱅킹앱 송금 QR 이미지(`img/transfer-qr.png`). 넣으면 예매 화면에 QR이 뜨고, 관객이 토스·카카오뱅크 등으로 스캔해 송금(없어도 계좌번호로 동작)
 - `EVENT.price`: 티켓 가격(기본 7,000원), `maxQuantity`: 1인 최대 매수
 - 메인 포스터는 `img/poster-main.jpg` 로 포함되어 있습니다. 교체하려면 같은 경로에 덮어쓰세요.
   (선택) 곡별 상세 큐시트 이미지를 `img/poster-cue.jpg` 로 넣으면 타임테이블 위에 함께 표시됩니다. 없어도 큐시트는 텍스트로 나옵니다.

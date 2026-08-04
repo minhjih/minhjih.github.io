@@ -28,12 +28,12 @@ window.JANYEOL_CONFIG = {
   BANK: {
     bank: "토스뱅크",
     account: "1002-7029-2183",
-    holder: "", // 예금주명 (비우면 표시 안 함) — 알려주시면 채울게요
+    holder: "최재현",
   },
-  // 카카오페이 송금 (link 를 넣으면 버튼, qrImage 파일이 있으면 QR 이미지로 표시)
-  KAKAO: {
-    link: "", // 예: https://qr.kakaopay.com/xxxxxxxx
-    qrImage: "img/kakaopay.png",
+  // 뱅킹앱 송금 QR (토스·카카오뱅크 등에서 스캔). 계좌는 위 BANK 사용.
+  // img/transfer-qr.png 파일을 넣으면 QR 이미지가 표시됩니다(없어도 계좌번호로 동작).
+  TRANSFER: {
+    qrImage: "img/transfer-qr.png",
   },
 
   // ----- 포스터 이미지 (img/ 폴더에 넣기) -----

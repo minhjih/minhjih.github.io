@@ -11,7 +11,7 @@ const esc = (s) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
 const fmt = (t) => (t ? new Date(t).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
-const methodLabel = (m) => (m === "kakao" ? "카카오페이" : m === "cash" ? "현금" : "계좌이체");
+const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : m === "kakao" ? "카카오페이" : "계좌이체");
 
 let KEY = sessionStorage.getItem("janyeol_admin_key") || "";
 let FILTER = "pending";

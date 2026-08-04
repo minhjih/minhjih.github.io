@@ -1,6 +1,6 @@
 // ===================================================================
 //  잔열 (殘熱) 티켓 — 구매자 페이지
-//  Google 로그인 → 구매 폼(계좌이체/카카오페이) → 입금확인 시 QR 자동 표시(실시간)
+//  Google 로그인 → 구매 폼(계좌이체/뱅킹앱 송금 QR) → 입금확인 시 QR 자동 표시(실시간)
 // ===================================================================
 const CFG = window.JANYEOL_CONFIG || {};
 const EV = CFG.EVENT || {};
@@ -207,7 +207,7 @@ function renderOrderCard(o) {
       <div class="pay-box" style="margin-top:0">
         <div class="row"><span class="k">수량</span><span class="v">${o.quantity}인</span></div>
         <div class="row"><span class="k">금액</span><span class="v">${won(o.amount)}</span></div>
-        <div class="row"><span class="k">결제</span><span class="v">${o.method === "kakao" ? "카카오페이" : "계좌이체"}</span></div>
+        <div class="row"><span class="k">결제</span><span class="v">${methodLabel(o.method)}</span></div>
       </div>
       ${body}
     </div>`;
@@ -235,10 +235,10 @@ function wireOrderActions(orders) {
     const paidBtn = document.getElementById(`paidBtn-${o.id}`);
     if (payBtn)
       payBtn.onclick = () => {
-        const K = CFG.KAKAO || {}, B = CFG.BANK || {};
-        if (o.method === "kakao" && K.link) {
-          window.open(K.link, "_blank", "noopener");
-        } else if (o.method === "bank") {
+        const B = CFG.BANK || {};
+        if (o.method === "qr") {
+          toast("위 QR을 뱅킹앱으로 스캔해 송금하세요");
+        } else {
           const acc = (B.account || "").replace(/[^0-9]/g, "");
           if (acc && navigator.clipboard) navigator.clipboard.writeText(acc).catch(() => {});
           toast("계좌번호를 복사했어요");
@@ -263,17 +263,23 @@ function wireOrderActions(orders) {
 }
 
 // ---------------- 결제 안내 ----------------
+const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : "계좌이체");
+
 function paymentInstructionsHTML(method, amount) {
   const B = CFG.BANK || {};
-  const K = CFG.KAKAO || {};
-  if (method === "kakao") {
-    let inner = "";
-    if (K.link) {
-      inner += `<a class="btn" href="${esc(K.link)}" target="_blank" rel="noopener">카카오페이로 송금하기</a>`;
-    }
-    inner += `<div class="center"><img src="${esc(K.qrImage || "")}" alt="카카오페이 QR" style="max-width:200px;border-radius:12px;margin-top:10px" onerror="this.style.display='none'"/></div>`;
-    inner += `<p class="hint center">위 카카오페이로 <b>${won(amount)}</b> 송금 후, 관리자가 확인하면 입장 QR이 발급됩니다.</p>`;
-    return `<div class="pay-box">${inner}</div>`;
+  const T = CFG.TRANSFER || {};
+  const acct = (B.account || "").replace(/[^0-9]/g, "");
+  if (method === "qr") {
+    return `<div class="pay-box">
+      ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
+      <p class="hint center">토스·카카오뱅크 등 <b>뱅킹앱으로 이 QR을 스캔</b>해 송금하세요.</p>` : ""}
+      <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
+      <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
+        <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
+      ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
+      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
+    </div>
+    <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
   }
   return `<div class="pay-box">
       <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
@@ -302,8 +308,8 @@ function mountBuyForm() {
 
       <label class="fld">결제 방법 *</label>
       <div class="seg" id="segMethod">
-        <button type="button" data-m="bank" class="on">계좌이체</button>
-        <button type="button" data-m="kakao">카카오페이</button>
+        <button type="button" data-m="bank" class="on">계좌번호</button>
+        <button type="button" data-m="qr">뱅킹앱 QR</button>
       </div>
 
       <label class="fld">입금자명 * <span style="font-weight:400;color:var(--dim)">(계좌/카카오에 찍히는 이름)</span></label>
