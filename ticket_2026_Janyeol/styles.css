@@ -33,6 +33,7 @@
   --f-display: "Black Han Sans", "Pretendard", sans-serif;
   --f-serif: "Playfair Display", "Noto Serif KR", "Pretendard", serif;
   --f-body: "Pretendard", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-mono: "Space Mono", "Courier Prime", monospace, ui-monospace, SFMono-Regular;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -229,6 +230,39 @@ select { appearance: none;
 .status-confirmed { background: rgba(74,217,145,.12); color: var(--ok); border-color: rgba(74,217,145,.3); }
 .status-used { background: rgba(124,98,90,.16); color: var(--dim); border-color: rgba(124,98,90,.3); }
 .status-cancelled { background: rgba(255,90,77,.12); color: var(--bad); border-color: rgba(255,90,77,.3); }
+
+/* ---------- 모던 공항 스타일 스마트 모노톤 티켓 패스 ---------- */
+.tech-ticket {
+  background: #f4f4f4; color: #111111; border-radius: 12px; padding: 20px 18px;
+  font-family: var(--f-mono); letter-spacing: normal; margin: 16px 0 10px; border: 1px solid #e0e0e0;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.5); text-align: left; position: relative;
+  overflow: hidden;
+}
+.tech-ticket-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 14px; }
+.tech-ticket-title { font-family: var(--f-mono); font-size: 24px; font-weight: 700; line-height: 1; letter-spacing: normal; color: #000; text-transform: uppercase; }
+.tech-ticket-sub { font-family: var(--f-mono); font-size: 10px; font-weight: 700; letter-spacing: normal; text-transform: uppercase; color: #555; margin-top: 4px; }
+.tech-ticket-badge { font-family: var(--f-mono); background: #000; color: #fff; font-size: 9.5px; font-weight: 700; letter-spacing: normal; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; }
+
+.tech-ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-bottom: 1px stroke #ccc; border-bottom: 1px dashed #bbb; padding-bottom: 14px; margin-bottom: 14px; }
+.tech-field { display: flex; flex-direction: column; }
+.tech-field .lbl { font-family: var(--f-mono); font-size: 9px; font-weight: 700; letter-spacing: normal; text-transform: uppercase; color: #666; margin-bottom: 2px; }
+.tech-field .val { font-family: var(--f-mono); font-size: 13px; font-weight: 700; letter-spacing: normal; color: #000; word-break: break-all; }
+
+.tech-qr-section { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 0 4px; background: #ffffff; border: 1px solid #e2e2e2; border-radius: 8px; }
+.tech-qr-box { padding: 8px; background: #fff; display: inline-block; }
+.tech-qr-box img, .tech-qr-box canvas { display: block; width: 180px !important; height: 180px !important; margin: 0 auto; }
+.tech-barcode { font-family: var(--f-mono); font-size: 11px; letter-spacing: normal; font-weight: 700; color: #222; margin-top: 8px; }
+
+.tech-ticket-foot { font-family: var(--f-mono); letter-spacing: normal; display: flex; justify-content: space-between; align-items: center; margin-top: 14px; pt-3; border-top: 1px solid #e0e0e0; font-size: 9.5px; color: #777; font-weight: 600; }
+
+.save-ticket-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 14px; margin-top: 10px; border-radius: var(--r-sm);
+  background: #ffffff; color: #111111; font-weight: 800; font-size: 14px;
+  border: 1px solid #ffffff; cursor: pointer; transition: background .15s, transform .1s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.save-ticket-btn:active { transform: scale(.98); background: #e5e5e5; }
 
 .qr-wrap { text-align: center; }
 .qr-box { display: inline-block; background: #fff; padding: 16px; border-radius: 12px; margin: 12px auto 8px; box-shadow: 0 0 0 1px rgba(255,120,40,.2), 0 18px 44px rgba(226,54,13,.22); }

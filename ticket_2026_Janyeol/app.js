@@ -139,7 +139,21 @@ async function renderLoggedIn(user) {
     return;
   }
 
-  const active = (orders || []).filter((o) => ["pending", "confirmed", "used"].includes(o.status));
+  let active = (orders || []).filter((o) => ["pending", "confirmed", "used"].includes(o.status));
+
+  if (CFG.DEV_MODE && CFG.DEV_AUTO_CONFIRM && !active.length) {
+    active = [
+      {
+        id: "mock-dev-ticket",
+        buyer_name: user.user_metadata?.full_name || "테스트 사용자",
+        quantity: 1,
+        amount: PRICE,
+        method: "bank",
+        status: "confirmed",
+        qr_token: "MOCK-DEV-QR-TOKEN-2026",
+      },
+    ];
+  }
 
   let html = bar;
   if (active.length) {
@@ -182,12 +196,49 @@ function renderOrderCard(o) {
   let body = "";
   if (o.status === "confirmed") {
     body = `
-      <div class="qr-wrap">
-        <div class="qr-box" id="qr-${o.id}"></div>
-        <div class="qr-meta">${esc(o.buyer_name)} · ${o.quantity}인</div>
-        <div class="qr-note">입장 시 이 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
-        <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button><br/><span style="color:var(--dim)">스캔이 안 되면 이 코드를 확인자에게 보여주세요.</span></div>
-      </div>`;
+      <div class="tech-ticket" id="pass-${o.id}">
+        <div class="tech-ticket-head">
+          <div>
+            <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
+            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 FRI 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
+          </div>
+          <div class="tech-ticket-badge">CONFIRMED</div>
+        </div>
+        <div class="tech-ticket-grid">
+          <div class="tech-field">
+            <span class="lbl">PASSENGER / BUYER</span>
+            <span class="val">${esc(o.buyer_name)}</span>
+          </div>
+          <div class="tech-field">
+            <span class="lbl">QTY / PRICE</span>
+            <span class="val">${o.quantity}인 (${won(o.amount)})</span>
+          </div>
+          <div class="tech-field">
+            <span class="lbl">GATE / VENUE</span>
+            <span class="val">${esc(EV.venue || "001 HALL")}</span>
+          </div>
+          <div class="tech-field">
+            <span class="lbl">STATUS</span>
+            <span class="val">VALID PASS</span>
+          </div>
+        </div>
+        <div class="tech-qr-section">
+          <div class="tech-qr-box" id="qr-${o.id}"></div>
+          <div class="tech-barcode">SYS-ID #${esc(o.id.toString().slice(-8).toUpperCase())}</div>
+        </div>
+        <div class="tech-ticket-foot">
+          <span>CODE: ${esc(o.qr_token)}</span>
+          <span>JANYEOL LIVE 2026</span>
+        </div>
+      </div>
+      
+      <button type="button" class="save-ticket-btn" onclick="saveTicketImage('pass-${o.id}', '${esc(o.buyer_name)}')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        티켓 사진으로 저장하기
+      </button>
+
+      <div class="qr-note" style="margin-top:12px;">입장 시 위 티켓 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
+      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>`;
   } else if (o.status === "used") {
     body = `<div class="center" style="padding:18px 0 6px">
         <div class="qr-meta" style="font-size:26px">입장 완료</div>
@@ -204,11 +255,6 @@ function renderOrderCard(o) {
   }
   return `<div class="card">
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
-      <div class="pay-box" style="margin-top:0">
-        <div class="row"><span class="k">수량</span><span class="v">${o.quantity}인</span></div>
-        <div class="row"><span class="k">금액</span><span class="v">${won(o.amount)}</span></div>
-        <div class="row"><span class="k">결제</span><span class="v">${methodLabel(o.method)}</span></div>
-      </div>
       ${body}
     </div>`;
 }
@@ -219,12 +265,37 @@ function drawQR(elId, text) {
   el.innerHTML = "";
   new window.QRCode(el, {
     text,
-    width: 220,
-    height: 220,
-    colorDark: "#111111",
+    width: 180,
+    height: 180,
+    colorDark: "#000000",
     colorLight: "#ffffff",
-    correctLevel: window.QRCode.CorrectLevel.M,
+    correctLevel: window.QRCode.CorrectLevel.H,
   });
+}
+
+async function saveTicketImage(passElementId, buyerName) {
+  const passEl = document.getElementById(passElementId);
+  if (!passEl) return;
+  try {
+    toast("티켓 이미지 생성 중…");
+    const canvas = await window.html2canvas(passEl, {
+      scale: 3, // 고해상도 저장
+      backgroundColor: "#f4f4f4",
+      useCORS: true,
+      logging: false,
+    });
+    const image = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = image;
+    link.download = `티켓_${buyerName || "잔열"}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast("티켓 사진이 저장되었습니다!");
+  } catch (e) {
+    console.error("티켓 저장 실패:", e);
+    toast("저장 실패: 다시 시도해주세요");
+  }
 }
 
 // ---------------- 결제 안내 ----------------
