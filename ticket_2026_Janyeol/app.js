@@ -93,12 +93,16 @@ function renderLoggedOut() {
     <div class="card cta center">
       <div class="kicker" style="text-align:center;color:var(--gold);margin-bottom:8px">Ticket · 티켓 구매</div>
       <div class="buy-price">${won(PRICE)} <small>1인</small></div>
-      <p class="hint" style="margin-top:10px">아래 버튼으로 <b>구글 로그인</b>하면 바로 티켓을 예매할 수 있어요.<br/>예매 → 입금 → 확인되면 <b>입장 QR</b>이 이 화면에 자동으로 떠요.</p>
+      <ul class="hint" style="margin-top:14px; text-align:left; padding-left:18px; line-height:1.75; display:flex; flex-direction:column; gap:6px;">
+        <li>아래 버튼으로 <b>구글 로그인</b>하면 티켓을 예매할 수 있어요.</li>
+        <li>입금이 확인되면 로그인 시 <b>입장 QR</b>이 자동으로 떠요.</li>
+        <li>당일날 QR을 제시해주시면 입장할 수 있어요.</li>
+        <li>입금 확인은 <b>수동</b>으로 진행되어, 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요.</li>
+      </ul>
       <button class="btn google" id="loginBtn">
         <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.1 0 24 0 14.6 0 6.4 5.4 2.6 13.2l7.8 6.1C12.2 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.5z"/><path fill="#FBBC05" d="M10.4 28.3c-.5-1.4-.8-2.9-.8-4.3s.3-3 .8-4.3l-7.8-6.1C.9 16.7 0 20.2 0 24s.9 7.3 2.6 10.4l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.1-5.5c-2 1.3-4.6 2.1-7.9 2.1-6.4 0-11.8-4.1-13.7-9.8l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
         구글 로그인하고 티켓 구매
       </button>
-      <div class="notice">입금 확인은 <b>수동</b>으로 진행돼요. 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.</div>
       <div class="err" id="authErr"></div>
     </div>`;
   $("#loginBtn").onclick = login;
@@ -129,7 +133,7 @@ async function renderLoggedIn(user) {
   const bar = `<div class="userbar"><span><b>${esc(name)}</b></span>
       <button class="btn ghost small" id="logoutBtn" style="width:auto;margin:0;padding:6px 12px">로그아웃</button></div>`;
 
-  if (error) {
+  if (error && !CFG.DEV_MODE) {
     area.innerHTML = bar + `<div class="card"><div class="err">주문을 불러오지 못했습니다: ${esc(error.message)}</div></div>`;
     wireUserbar();
     return;
@@ -242,6 +246,16 @@ function paymentInstructionsHTML(method, amount) {
   const B = CFG.BANK || {};
   const T = CFG.TRANSFER || {};
   const acct = (B.account || "").replace(/[^0-9]/g, "");
+  const tossBankCode = B.tossBankCode || "TOSS";
+  const tossDeepLink = `supertoss://send?bank=${encodeURIComponent(tossBankCode)}&accountNo=${encodeURIComponent(acct)}&amount=${amount}`;
+
+  const tossBtnHTML = acct
+    ? `<button type="button" class="toss-btn" onclick="window.location.href='${tossDeepLink}'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+        토스 앱으로 송금하기
+      </button>`
+    : "";
+
   if (method === "qr") {
     return `<div class="pay-box">
       ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
@@ -251,6 +265,7 @@ function paymentInstructionsHTML(method, amount) {
         <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
       ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
       <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
+      ${tossBtnHTML}
     </div>
     <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
   }
@@ -260,6 +275,7 @@ function paymentInstructionsHTML(method, amount) {
         <button class="copy" data-copy="${esc((B.account || "").replace(/[^0-9]/g, ""))}">복사</button></span></div>
       ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
       <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
+      ${tossBtnHTML}
     </div>
     <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
 }
@@ -273,8 +289,7 @@ function mountBuyForm() {
   const prefill = CURRENT_USER?.user_metadata?.full_name || "";
   mount.innerHTML = `
     <div class="card">
-      <h2>Reserve · 티켓 예매</h2>
-      <label class="fld">받는 분 이름 *</label>
+      <label class="fld">예매자 실명*</label>
       <input id="fName" placeholder="이름" value="${esc(prefill)}" autocomplete="name" />
       <label class="fld">연락처 *</label>
       <input id="fPhone" placeholder="010-0000-0000" inputmode="tel" autocomplete="tel" />
@@ -285,7 +300,7 @@ function mountBuyForm() {
         <button type="button" data-m="qr">뱅킹앱 QR</button>
       </div>
 
-      <label class="fld">입금자명 * <span style="font-weight:400;color:var(--dim)">(통장/뱅킹앱에 찍히는 이름)</span></label>
+      <label class="fld">입금자명 * <span style="font-weight:400;color:var(--dim)"></span></label>
       <input id="fDep" placeholder="입금자 이름" value="${esc(prefill)}" />
 
       <label class="fld">수량 *</label>
@@ -301,7 +316,8 @@ function mountBuyForm() {
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
       <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <div class="notice">위 계좌로 송금한 뒤 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있고, 확인되면 <b>입장 QR</b>이 자동으로 떠요.</div>
+      <div class="notice">위 계좌로 송금한 뒤 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있고, 확인되면 로그인 시 <b>입장 QR</b>이 자동으로 떠요.</div>
+      <div class="notice">현장 예매도 가능합니다.</div>
       <div class="err" id="formErr"></div>
     </div>`;
 
@@ -398,10 +414,21 @@ function subscribeRealtime(userId) {
 }
 
 // ---------------- 부팅 ----------------
+const MOCK_DEV_USER = {
+  id: "dev-local-user",
+  email: "dev@local.test",
+  user_metadata: { full_name: "테스트 사용자 (DEV)" },
+};
+
 async function refresh() {
   const { data } = await sb.auth.getUser();
-  if (data?.user) await renderLoggedIn(data.user);
-  else renderLoggedOut();
+  if (data?.user) {
+    await renderLoggedIn(data.user);
+  } else if (CFG.DEV_MODE) {
+    await renderLoggedIn(MOCK_DEV_USER);
+  } else {
+    renderLoggedOut();
+  }
 }
 
 async function boot() {
@@ -411,6 +438,8 @@ async function boot() {
     await sb.realtime.setAuth(data.session.access_token);
     subscribeRealtime(data.session.user.id);
     await renderLoggedIn(data.session.user);
+  } else if (CFG.DEV_MODE) {
+    await renderLoggedIn(MOCK_DEV_USER);
   } else {
     renderLoggedOut();
   }
@@ -420,6 +449,8 @@ async function boot() {
       await sb.realtime.setAuth(session.access_token);
       subscribeRealtime(session.user.id);
       await renderLoggedIn(session.user);
+    } else if (CFG.DEV_MODE) {
+      await renderLoggedIn(MOCK_DEV_USER);
     } else {
       renderLoggedOut();
     }

@@ -4,6 +4,10 @@
 //  자세한 설치/운영은 SETUP.md 참고.
 // ===================================================================
 window.JANYEOL_CONFIG = {
+  // 개발자/테스트용 (true로 설정 시 구글 로그인 없이도 바로 티켓 예매 폼 활성화)
+  // 배포 시 false로 변경하세요.
+  DEV_MODE: false,
+
   // ----- Supabase (데이터/인증) -----
   SUPABASE_URL: "https://gppwawgyoysctikujmed.supabase.co",
   // anon(public) 키 — 브라우저 노출 OK (RLS로 보호)
@@ -29,6 +33,7 @@ window.JANYEOL_CONFIG = {
     bank: "토스뱅크",
     account: "1002-7029-2183",
     holder: "최재현",
+    tossBankCode: "TOSS",
   },
   // 뱅킹앱 송금 QR (토스·카카오뱅크 등에서 스캔). 계좌는 위 BANK 사용.
   // img/transfer-qr.png 파일을 넣으면 QR 이미지가 표시됩니다(없어도 계좌번호로 동작).
@@ -76,15 +81,15 @@ window.JANYEOL_CONFIG = {
       band: "브레멘",
       meta: "10 songs · 1h 15m",
       songs: [
-        ["아지캉", "センスレス"],
-        ["wave to earth", "bad."],
+        ["ASIAN KUNG-FU GENERATION", "センスレス"],
+        ["wave to earth", "bad"],
         ["검정치마", "섬 (Queen of Diamonds)"],
         ["서태지와 아이들", "시대유감"],
-        ["ヨルシカ", "春泥棒"],
+        ["ヨルシカ", "春泥棒(봄도둑)"],
         ["검정치마", "Antifreeze"],
         ["쏜애플", "아지랑이"],
         ["X JAPAN", "Endless Rain"],
-        ["MCR", "The End. + Dead!"],
+        ["My Chemical Romance", "The End. + Dead!"],
         ["초록불꽃소년단", "그저 귀여운 츠보미였는걸"],
       ],
     },
