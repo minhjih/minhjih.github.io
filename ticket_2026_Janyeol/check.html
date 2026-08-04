@@ -54,6 +54,25 @@
         </details>
         <button class="btn ghost small" id="logoutBtn" style="margin-top:14px">잠그기</button>
       </div>
+
+      <div class="card">
+        <h2>현매 추가 · Walk-in</h2>
+        <p class="hint">현장에서 현금 결제한 관객을 <b>바로 입장 처리</b>하고 명단에 <b>현매</b>로 기록합니다.</p>
+        <label class="fld">이름 *</label>
+        <input id="wName" placeholder="이름" autocomplete="off" />
+        <label class="fld">연락처 (선택)</label>
+        <input id="wPhone" placeholder="010-0000-0000" inputmode="tel" autocomplete="off" />
+        <label class="fld">인원 *</label>
+        <div class="qty">
+          <button type="button" id="wMinus">−</button>
+          <span class="n" id="wN">1</span>
+          <button type="button" id="wPlus">+</button>
+          <span class="hint" id="wAmt" style="margin:0 0 0 8px"></span>
+        </div>
+        <button class="btn" id="wAddBtn">현매 입장 처리</button>
+        <div id="wResult"></div>
+        <div class="err" id="wErr"></div>
+      </div>
     </div>
 
     <div class="footer"><a href="index.html">← 예매</a> · <a href="admin.html">관리자 →</a></div>

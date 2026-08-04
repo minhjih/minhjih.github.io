@@ -279,7 +279,7 @@ function paymentInstructionsHTML(method, amount) {
       <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
       <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
         <button class="copy" data-copy="${esc((B.account || "").replace(/[^0-9]/g, ""))}">복사</button></span></div>
-      <div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder || "")}</span></div>
+      ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
       <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
     </div>
     <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;

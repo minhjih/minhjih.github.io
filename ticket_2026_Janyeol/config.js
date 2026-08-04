@@ -26,9 +26,9 @@ window.JANYEOL_CONFIG = {
   // ----- 결제 안내 -----
   // 계좌이체
   BANK: {
-    bank: "○○은행",
-    account: "000-0000-0000-00",
-    holder: "예금주명",
+    bank: "토스뱅크",
+    account: "1002-7029-2183",
+    holder: "", // 예금주명 (비우면 표시 안 함) — 알려주시면 채울게요
   },
   // 카카오페이 송금 (link 를 넣으면 버튼, qrImage 파일이 있으면 QR 이미지로 표시)
   KAKAO: {
