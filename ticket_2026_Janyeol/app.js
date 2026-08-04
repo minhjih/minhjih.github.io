@@ -147,6 +147,7 @@ async function renderLoggedIn(user) {
   }
   area.innerHTML = html;
   wireUserbar();
+  wireCopy(area);
 
   if (active.length) {
     // QR 그리기
@@ -181,6 +182,7 @@ function renderOrderCard(o) {
         <div class="qr-box" id="qr-${o.id}"></div>
         <div class="qr-meta">${esc(o.buyer_name)} · ${o.quantity}인</div>
         <div class="qr-note">입장 시 이 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
+        <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button><br/><span style="color:var(--dim)">스캔이 안 되면 이 코드를 확인자에게 보여주세요.</span></div>
       </div>`;
   } else if (o.status === "used") {
     body = `<div class="center" style="padding:18px 0 6px">
