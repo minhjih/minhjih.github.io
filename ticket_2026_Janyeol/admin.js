@@ -87,6 +87,37 @@ function renderList() {
   $("#list").querySelectorAll("[data-act]").forEach((b) => {
     b.onclick = () => act(b.dataset.act, b.dataset.id, b);
   });
+  // 일괄 선택 바 (확인대기 목록에서만)
+  const sels = [...$("#list").querySelectorAll(".ordersel")];
+  const bar = $("#bulkBar");
+  bar.classList.toggle("hidden", sels.length === 0);
+  if (sels.length) {
+    const update = () => {
+      const n = sels.filter((c) => c.checked).length;
+      $("#selCount").textContent = n;
+      $("#bulkBtn").disabled = n === 0;
+      $("#selAll").checked = n > 0 && n === sels.length;
+    };
+    sels.forEach((c) => (c.onchange = update));
+    $("#selAll").onchange = () => { sels.forEach((c) => (c.checked = $("#selAll").checked)); update(); };
+    update();
+  }
+}
+
+async function bulkConfirm() {
+  const ids = [...$("#list").querySelectorAll(".ordersel:checked")].map((c) => c.dataset.id);
+  if (!ids.length) return;
+  if (!confirm(`${ids.length}건을 일괄 입금확인(QR 발급)할까요?`)) return;
+  const btn = $("#bulkBtn");
+  btn.disabled = true;
+  let ok = 0, fail = 0;
+  for (let i = 0; i < ids.length; i++) {
+    $("#selCount").textContent = `${i + 1}/${ids.length} 처리중…`;
+    try { await desk("confirm", { order_id: ids[i] }); ok++; }
+    catch (e) { fail++; }
+  }
+  toast(`일괄 확인: ${ok}건 완료${fail ? ` · ${fail}건 실패` : ""}`);
+  await load();
 }
 
 const SLABEL = {
@@ -111,7 +142,7 @@ function card(o) {
   }
   return `<div class="order">
       <div class="top">
-        <span class="nm">${esc(o.depositor_name || o.buyer_name)} <span style="font-weight:600;color:var(--muted);font-size:13px">· ${o.quantity}인</span></span>
+        <span class="nm">${o.status === "pending" ? `<input type="checkbox" class="ordersel" data-id="${o.id}" style="width:auto;margin:0 8px 0 0;vertical-align:-2px" />` : ""}${esc(o.depositor_name || o.buyer_name)} <span style="font-weight:600;color:var(--muted);font-size:13px">· ${o.quantity}인</span></span>
         <span class="status-pill ${cls}">${lbl}</span>
       </div>
       <div class="meta">
@@ -208,6 +239,7 @@ async function setMailWebhook() {
 // ---------- 이벤트 ----------
 $("#enterBtn").onclick = enter;
 $("#mailBtn").onclick = setMailWebhook;
+$("#bulkBtn").onclick = bulkConfirm;
 $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); });
 $("#refreshBtn").onclick = load;
 $("#csvBtn").onclick = exportCsv;

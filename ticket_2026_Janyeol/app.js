@@ -226,6 +226,7 @@ async function renderLoggedIn(user) {
         drawQR(`qr-${o.id}`, o.qr_token);
         // 티켓 이미지를 미리 생성 → iOS에서 버튼 탭 시 공유(사진 저장)가 제스처 안에서 즉시 동작
         setTimeout(() => preparePass(`pass-${o.id}`), 300);
+        setTimeout(() => preparePass(`share-${o.id}`), 500);
       }
     });
     $("#addMore").onclick = () => {
@@ -287,13 +288,20 @@ function renderOrderCard(o) {
         </div>
       </div>
       
-      <button type="button" class="save-ticket-btn" onclick="saveTicketImage('pass-${o.id}', '${esc(o.buyer_name)}')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        티켓 사진으로 저장하기
-      </button>
+      <div class="ticket-btns">
+        <button type="button" class="save-ticket-btn" onclick="saveTicketImage('pass-${o.id}', '${esc(o.buyer_name)}')">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          티켓 저장
+        </button>
+        <button type="button" class="share-ticket-btn" onclick="shareTicketImage('share-${o.id}', '${esc(o.buyer_name)}')">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+          인스타 공유
+        </button>
+      </div>
 
       <div class="qr-note" style="margin-top:12px;">입장 시 위 티켓 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
-      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>`;
+      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>
+      ${shareCardHTML(o)}`;
   } else if (o.status === "used") {
     body = `<div class="center" style="padding:18px 0 6px">
         <div class="qr-meta" style="font-size:26px">입장 완료</div>
@@ -312,6 +320,69 @@ function renderOrderCard(o) {
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
       ${body}
     </div>`;
+}
+
+// 인스타 공유용 카드(오프스크린): 티켓 모양 그대로, QR 자리를 포스터 패널로 대체(QR 없음)
+function shareCardHTML(o) {
+  const poster = (CFG.POSTER && CFG.POSTER.main) || "";
+  return `
+    <div style="position:fixed;left:-10000px;top:0;width:340px;pointer-events:none;" aria-hidden="true">
+      <div class="tech-ticket" id="share-${o.id}">
+        <div class="tech-ticket-head">
+          <div>
+            <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
+            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 FRI 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
+          </div>
+          <div class="tech-ticket-badge">SECURED</div>
+        </div>
+        <div class="tech-ticket-grid">
+          <div class="tech-field"><span class="lbl">NAME</span><span class="val">${esc(o.buyer_name)}</span></div>
+          <div class="tech-field"><span class="lbl">QTY</span><span class="val">${o.quantity}인</span></div>
+          <div class="tech-field"><span class="lbl">DATE</span><span class="val">8.29 FRI</span></div>
+          <div class="tech-field"><span class="lbl">VENUE</span><span class="val">${esc(EV.venue || "001 HALL")}</span></div>
+        </div>
+        <div class="share-poster">
+          ${poster ? `<img src="${esc(poster)}" alt="" />` : ""}
+          <div class="share-poster-cap">
+            <div class="l1">SEE YOU THERE</div>
+            <div class="l2">#잔열 · ${esc(EV.dateLabel || "8.29 (금) 5:30PM")} · ${esc(EV.venue || "001 라이브홀")}</div>
+          </div>
+        </div>
+        <div class="tech-ticket-foot"><span>JANYEOL LIVE 2026</span><span>ADMIT ${o.quantity}</span></div>
+      </div>
+    </div>`;
+}
+
+// 인스타 공유(=OS 공유 시트). QR 없는 포스터 카드라 공개해도 안전.
+async function shareTicketImage(shareElementId, buyerName) {
+  const fileName = `잔열티켓_${buyerName || "잔열"}.png`;
+  try {
+    let blob = PASS_BLOBS[shareElementId];
+    if (blob && navigator.canShare) {
+      const file = new File([blob], fileName, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text: "잔열 8.29 (금) 5:30PM · 001 라이브홀 🎫 #잔열" }); return; }
+        catch (err) { if (err && err.name === "AbortError") return; }
+      }
+    }
+    if (!blob) { toast("이미지 생성 중…"); blob = await renderPassBlob(shareElementId); if (blob) PASS_BLOBS[shareElementId] = blob; }
+    if (!blob) throw new Error("이미지 변환 실패");
+    const url = URL.createObjectURL(blob);
+    if (!isIOS() && "download" in document.createElement("a")) {
+      const a = document.createElement("a");
+      a.href = url; a.download = fileName;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 6000);
+      toast("이미지를 저장했어요! 인스타 스토리에 올려보세요");
+      return;
+    }
+    const w = window.open();
+    if (w) w.document.write(`<title>잔열 티켓</title><body style="margin:0;background:#0a0605;text-align:center"><img src="${url}" style="width:100%;max-width:420px"/><p style="color:#fff;font-family:-apple-system,sans-serif;padding:14px">길게 눌러 저장 후 인스타 스토리에 올려보세요</p></body>`);
+    else location.href = url;
+  } catch (e) {
+    console.error("공유 실패:", e);
+    toast("공유 준비 실패: 다시 시도해주세요");
+  }
 }
 
 function drawQR(elId, text) {
