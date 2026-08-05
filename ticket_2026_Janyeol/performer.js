@@ -71,11 +71,12 @@ function renderLoggedOut() {
   $("#perfArea").innerHTML = `
     <div class="card cta center">
       <div class="kicker" style="text-align:center;color:var(--gold);margin-bottom:8px">Performer · 공연자 티켓</div>
-      <div class="buy-price" style="font-size:26px">무료 초대 <small>공연자</small></div>
+      <div class="buy-price" style="font-size:26px"> 밴드<small>공연자</small></div>
       <ul class="hint" style="margin-top:14px; text-align:left; padding-left:18px; line-height:1.75; display:flex; flex-direction:column; gap:6px;">
         <li>아래 버튼으로 <b>구글 로그인</b> 후, 이름과 소속 밴드를 선택해 신청하세요.</li>
         <li>공연자 티켓은 <b>지불이 필요 없어요.</b> 운영진이 확인하면 <b>입장 QR</b>이 이 화면에 자동으로 떠요.</li>
         <li>로그인해 두면 언제든 다시 들어와 <b>내 입장 QR</b>을 확인할 수 있어요.</li>
+        <li>사실 디자인이 이뻐서 기념품으로 가지시라고 만들었어요.</li>
       </ul>
       <div id="gsiWrap" class="center" style="display:flex;justify-content:center;min-height:44px;margin-top:16px"></div>
       <button class="btn google" id="loginBtn" style="display:none">
