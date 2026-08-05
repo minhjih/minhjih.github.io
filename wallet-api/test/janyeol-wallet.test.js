@@ -1,9 +1,25 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { GET, OPTIONS, POST } from "../api/janyeol-wallet.js";
 
 const ENDPOINT = "https://wallet.example/api/janyeol-wallet";
 const ORDER_ID = "6f6c888e-7d40-4bb4-bc4b-f6008964ea6e";
+
+test("pass background assets cover every Wallet display scale", async () => {
+  const expectedSizes = {
+    "background.png": [180, 220],
+    "background@2x.png": [360, 440],
+    "background@3x.png": [540, 660],
+  };
+
+  for (const [name, [width, height]] of Object.entries(expectedSizes)) {
+    const image = await readFile(new URL(`../api/assets/${name}`, import.meta.url));
+    assert.equal(image.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    assert.equal(image.readUInt32BE(16), width);
+    assert.equal(image.readUInt32BE(20), height);
+  }
+});
 
 test("preflight allows only configured browser origins", async () => {
   const allowed = await OPTIONS(new Request(ENDPOINT, {

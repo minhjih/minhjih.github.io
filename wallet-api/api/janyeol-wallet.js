@@ -19,6 +19,14 @@ const DEFAULT_ALLOWED_ORIGINS = [
   "http://127.0.0.1:8765",
 ].join(",");
 const ORDER_COLUMNS = "id,buyer_name,quantity,status,qr_token";
+const PASS_ASSET_NAMES = [
+  "icon.png",
+  "icon@2x.png",
+  "icon@3x.png",
+  "background.png",
+  "background@2x.png",
+  "background@3x.png",
+];
 
 let assetBuffersPromise;
 
@@ -50,15 +58,11 @@ function allowedOrigin(request) {
 
 async function loadPassAssets() {
   if (!assetBuffersPromise) {
-    assetBuffersPromise = Promise.all([
-      readFile(new URL("./assets/icon.png", import.meta.url)),
-      readFile(new URL("./assets/icon@2x.png", import.meta.url)),
-      readFile(new URL("./assets/icon@3x.png", import.meta.url)),
-    ]).then(([icon, icon2x, icon3x]) => ({
-      "icon.png": icon,
-      "icon@2x.png": icon2x,
-      "icon@3x.png": icon3x,
-    }));
+    assetBuffersPromise = Promise.all(
+      PASS_ASSET_NAMES.map((name) => readFile(new URL(`./assets/${name}`, import.meta.url))),
+    ).then((buffers) => Object.fromEntries(
+      PASS_ASSET_NAMES.map((name, index) => [name, buffers[index]]),
+    ));
   }
   return assetBuffersPromise;
 }
