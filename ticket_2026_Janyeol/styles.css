@@ -61,17 +61,46 @@ a { color: var(--gold); text-underline-offset: 3px; }
   background: radial-gradient(circle at 50% 46%,
     #ffcf88 0%, #ff8f2c 12%, #f2521a 30%, #c22e0e 48%, #7c1c06 64%, rgba(70,14,4,0) 74%);
   filter: blur(3px) url(#heat); opacity: .66;
+  animation: sunMorph 20s ease-in-out infinite, sunBreathe 7.5s ease-in-out infinite;
+  will-change: transform, border-radius;
 }
 .sun::after {
   content: ""; position: absolute; inset: -18%; border-radius: inherit;
-  background: radial-gradient(circle at 50% 48%, rgba(255,95,26,.34) 0%, rgba(226,58,16,0) 62%);
+  background: radial-gradient(circle at 50% 48%, rgba(255,95,26,.4) 0%, rgba(226,58,16,0) 62%);
   filter: blur(34px);
+  animation: sunFlare 9s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 .sun-flare {
   position: absolute; left: 50%; top: 4vh; transform: translateX(-50%);
   width: min(100vw, 900px); height: 78vh; z-index: -2; pointer-events: none;
   background: radial-gradient(58% 76% at 50% 0%, rgba(255,80,20,.2), rgba(226,58,16,0) 72%);
   filter: blur(22px) url(#heat); opacity: .7;
+  animation: flareSweep 13s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes sunMorph {
+  0%, 100% { border-radius: 47% 53% 50% 50% / 52% 48% 52% 48%; }
+  25% { border-radius: 54% 46% 56% 44% / 45% 55% 46% 54%; }
+  50% { border-radius: 44% 56% 47% 53% / 56% 44% 55% 45%; }
+  75% { border-radius: 52% 48% 52% 48% / 48% 53% 45% 55%; }
+}
+@keyframes sunBreathe {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: .6; }
+  50% { transform: translateX(-50%) scale(1.055); opacity: .82; }
+}
+/* 코로나 플레어: 불규칙하게 '터지듯' 밝아졌다 사그라듦 */
+@keyframes sunFlare {
+  0%, 100% { transform: scale(1); opacity: .45; }
+  18% { transform: scale(1.16); opacity: .95; }
+  32% { transform: scale(1.03); opacity: .55; }
+  58% { transform: scale(1.24); opacity: 1; }
+  74% { transform: scale(1.06); opacity: .6; }
+}
+@keyframes flareSweep {
+  0%, 100% { opacity: .5; transform: translateX(-50%) scaleY(1); }
+  50% { opacity: .9; transform: translateX(-50%) scaleY(1.09); }
 }
 .vignette {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
@@ -339,6 +368,6 @@ select { appearance: none;
 
 @media (min-width: 700px) { .sun { top: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .sun, .sun::after { animation: none !important; }
+  .sun, .sun::after, .sun-flare { animation: none !important; }
   .sun { filter: blur(3px); }
 }
