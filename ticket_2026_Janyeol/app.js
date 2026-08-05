@@ -96,6 +96,7 @@ function renderLoggedOut() {
       <ul class="hint" style="margin-top:14px; text-align:left; padding-left:18px; line-height:1.75; display:flex; flex-direction:column; gap:6px;">
         <li>아래 버튼으로 <b>구글 로그인</b>하면 티켓을 예매할 수 있어요.</li>
         <li>입금이 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드려요. <b>📩 이메일을 꼭 확인해 주세요.</b></li>
+        <li>메일을 못 받아도 걱정 마세요 — <b>이 사이트에 로그인하면 언제든 내 티켓·QR을 확인</b>할 수 있어요.</li>
         <li>로그인 시 화면에도 <b>입장 QR</b>이 자동으로 떠요. 당일 이 QR을 제시하면 입장돼요.</li>
         <li>입금 확인은 <b>수동</b>으로 진행되어, 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요.</li>
       </ul>
@@ -305,7 +306,7 @@ function renderOrderCard(o) {
       </div>
       ${depositReminder(o.amount)}
       ${accountBoxHTML(o.amount)}
-      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 이 화면에도 <b>입장 QR</b>이 자동으로 떠요. <b>📩 이메일을 확인해 주세요.</b></div>`;
+      <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 이 화면에도 <b>입장 QR</b>이 자동으로 떠요. <b>📩 이메일을 확인해 주세요.</b><br/><span style="color:var(--dim)">메일을 못 받아도 이 사이트에 <b style="color:var(--muted)">로그인하면 언제든 확인</b>할 수 있어요.</span></div>`;
   }
   return `<div class="card">
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
@@ -510,7 +511,7 @@ function mountBuyForm() {
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
       <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <div class="notice">위 계좌(또는 QR)로 송금한 뒤 <b>‘입금 완료했어요’</b> 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 로그인 화면에도 공연 입장용 <b>티켓 QR</b>이 떠요. <b>📩 이메일을 확인해 주세요.</b><br/><span style="color:var(--dim)">이 티켓 QR은 방금 <b style="color:var(--muted)">송금할 때 쓴 QR과는 다른</b>, 공연 당일 입장 때 보여주는 QR이에요.</span></div>
+      <div class="notice">위 계좌(또는 QR)로 송금한 뒤 <b>‘입금 완료했어요’</b> 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 로그인 화면에도 공연 입장용 <b>티켓 QR</b>이 떠요. <b>📩 이메일을 확인해 주세요.</b> (메일을 못 받아도 <b>사이트에 로그인하면 언제든 확인</b> 가능)<br/><span style="color:var(--dim)">이 티켓 QR은 방금 <b style="color:var(--muted)">송금할 때 쓴 QR과는 다른</b>, 공연 당일 입장 때 보여주는 QR이에요.</span></div>
       <div class="notice">현장 예매도 가능합니다.</div>
       <div class="err" id="formErr"></div>
     </div>`;
