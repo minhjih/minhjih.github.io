@@ -21,7 +21,7 @@ window.JANYEOL_CONFIG = {
   // 구글 로그인 — Google Cloud의 웹 OAuth "클라이언트 ID"(xxx.apps.googleusercontent.com)를 넣으면
   // 우리 사이트에서 바로 구글 계정 선택창이 뜹니다(중간에 supabase.co 도메인 노출 X).
   // 비워두면 기존 리다이렉트 방식으로 동작(로그인은 되지만 supabase.co 화면을 거침).
-  GOOGLE_CLIENT_ID: "",
+  GOOGLE_CLIENT_ID: "822838303164-mdq7shftb7935k4o7mj4tma3db14h2ve.apps.googleusercontent.com",
 
   // ----- 공연 정보 -----
   EVENT: {
