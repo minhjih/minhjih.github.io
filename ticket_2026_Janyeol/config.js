@@ -18,6 +18,13 @@ window.JANYEOL_CONFIG = {
   // 관리자/확인자 백엔드 (엣지 함수 이름) — 비밀번호는 Supabase DB(tk_config)에만 저장
   DESK_FUNCTION: "janyeol-desk",
 
+  // Apple Wallet 패스 발급 API. Vercel 배포와 공식 배지 파일 준비 후에만 enabled를 켜세요.
+  APPLE_WALLET: {
+    enabled: false,
+    endpoint: "https://janyeol-wallet.vercel.app/api/janyeol-wallet",
+    badgeImage: "img/add-to-apple-wallet-ko.svg?v=20260805-3",
+  },
+
   // 구글 로그인 — Google Cloud의 웹 OAuth "클라이언트 ID"(xxx.apps.googleusercontent.com)를 넣으면
   // 우리 사이트에서 바로 구글 계정 선택창이 뜹니다(중간에 supabase.co 도메인 노출 X).
   // 비워두면 기존 리다이렉트 방식으로 동작(로그인은 되지만 supabase.co 화면을 거침).

@@ -6,6 +6,7 @@ const CFG = window.JANYEOL_CONFIG || {};
 const EV = CFG.EVENT || {};
 const PRICE = Number(EV.price || 0);
 const MAXQ = Number(EV.maxQuantity || 6);
+const WALLET = CFG.APPLE_WALLET || {};
 
 const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
   auth: { detectSessionInUrl: true, persistSession: true, flowType: "pkce" },
@@ -375,6 +376,7 @@ function renderOrderCard(o) {
           인스타 공유
         </button>
       </div>
+      ${appleWalletButtonHTML(o.id)}
 
       <div class="qr-note" style="margin-top:12px;">입장 시 위 티켓 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
       <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>
@@ -397,6 +399,15 @@ function renderOrderCard(o) {
       <h2>My Ticket · 내 티켓 <span class="status-pill ${cls} pill">${label}</span></h2>
       ${body}
     </div>`;
+}
+
+function appleWalletButtonHTML(orderId) {
+  if (!WALLET.enabled || !WALLET.endpoint || !WALLET.badgeImage) return "";
+  return `<div class="apple-wallet-action">
+    <button type="button" class="apple-wallet-btn" data-wallet-order-id="${esc(orderId)}" aria-label="Apple 지갑에 추가">
+      <img src="${esc(WALLET.badgeImage)}" alt="Apple 지갑에 추가" />
+    </button>
+  </div>`;
 }
 
 // 인스타 공유용 카드(오프스크린): 티켓 모양 그대로, QR 자리에 "이미 크롭된" 티켓 이미지 배치(QR 없음).
@@ -749,6 +760,47 @@ function wireTicketActions(root) {
   root.querySelectorAll("[data-share-pass]").forEach((b) => {
     b.onclick = () => shareTicketImage(b.dataset.sharePass, b.dataset.buyerName || "");
   });
+  root.querySelectorAll("[data-wallet-order-id]").forEach((b) => {
+    b.onclick = () => addToAppleWallet(b.dataset.walletOrderId, b);
+  });
+}
+
+async function addToAppleWallet(orderId, button) {
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
+
+    const endpoint = new URL(WALLET.endpoint, location.href);
+    const response = await fetch(endpoint, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ order_id: orderId }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const messages = {
+        order_not_found: "본인 티켓을 확인하지 못했습니다.",
+        ticket_not_available: "발급 완료된 티켓만 지갑에 추가할 수 있습니다.",
+        wallet_unavailable: "Apple 지갑 발급 서버를 사용할 수 없습니다.",
+      };
+      throw new Error(messages[result.error] || "Apple 지갑 티켓 발급에 실패했습니다.");
+    }
+
+    const downloadUrl = new URL(result.download_url);
+    if (downloadUrl.origin !== endpoint.origin) throw new Error("잘못된 지갑 다운로드 주소입니다.");
+    location.assign(downloadUrl.href);
+  } catch (error) {
+    toast(error instanceof Error ? error.message : "Apple 지갑 티켓 발급에 실패했습니다.");
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+  }
 }
 
 async function submitOrder() {
