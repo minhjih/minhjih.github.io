@@ -370,36 +370,36 @@ function paymentInstructionsHTML(method, amount) {
   const tossBankCode = B.tossBankCode || "TOSS";
   const tossDeepLink = `supertoss://send?bank=${encodeURIComponent(tossBankCode)}&accountNo=${encodeURIComponent(acct)}&amount=${amount}`;
 
-  const tossBtnHTML = acct
-    ? `<button type="button" class="toss-btn" onclick="window.location.href='${tossDeepLink}'">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
-        토스 앱으로 송금하기
-      </button>`
-    : "";
-
-  if (method === "qr") {
-    return `<div class="pay-box">
-      ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
-      <p class="hint center"><b>휴대폰 카메라로 이 QR을 스캔</b>해 송금하세요.</p>
-      ${T.link ? `<p class="hint center">위 QR에 대한 링크는 <a href="${esc(T.link)}" target="_blank" rel="noopener"><b>여기</b></a> 입니다.</p>` : ""}` : ""}
+  const acctRows = `
       <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
       <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
         <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
       ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
-      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
-      ${tossBtnHTML}
+      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>`;
+  const depositHint = `<p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
+
+  if (method === "qr") {
+    // 뱅킹앱 QR: 카메라 스캔 + 'QR 링크로 이동하기' 버튼 (토스 버튼 없음)
+    return `<div class="pay-box">
+      ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
+      <p class="hint center"><b>휴대폰 카메라로 이 QR을 스캔</b>해 송금하세요.</p>` : ""}
+      ${T.link ? `<a class="linkout-btn" href="${esc(T.link)}" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>QR 링크로 이동하기</a>` : ""}
+      ${acctRows}
     </div>
-    <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
+    ${depositHint}`;
   }
-  return `<div class="pay-box">
-      <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
-      <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
-        <button class="copy" data-copy="${esc((B.account || "").replace(/[^0-9]/g, ""))}">복사</button></span></div>
-      ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
-      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
-      ${tossBtnHTML}
+
+  // 계좌번호: 계좌 복사가 기본, 아래에 '또는 간편하게' 구분 + 토스 버튼(분리)
+  const tossBtn = acct
+    ? `<button type="button" class="toss-btn" onclick="window.location.href='${tossDeepLink}'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+        토스앱으로 간편하게 입금하기
+      </button>`
+    : "";
+  return `<div class="pay-box">${acctRows}
     </div>
-    <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
+    ${tossBtn ? `<div class="pay-or">또는 간편하게</div>${tossBtn}` : ""}
+    ${depositHint}`;
 }
 
 // ---------------- 구매 폼 ----------------
