@@ -27,6 +27,9 @@
 - 테이블: `tk_orders`(주문/QR), `tk_config`(비밀번호) — 이미 생성됨
 - 엣지 함수: `janyeol-desk` — 입금확인/체크인 처리 — 이미 배포됨
 
+Apple Wallet 패스 발급은 Supabase 배포 권한 없이 운영할 수 있도록 별도 Vercel Function으로 분리되어 있습니다.
+설정과 인증서 배포 방법은 [`wallet-api/README.md`](../wallet-api/README.md)를 참고하세요.
+
 ---
 
 ## ✅ 지금 꼭 해야 하는 것 (2가지)

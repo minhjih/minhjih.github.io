@@ -1,0 +1,17 @@
+{
+  "name": "minhjih-ticket-wallet-service",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "passkit-generator": "3.5.7"
+  },
+  "overrides": {
+    "joi": "17.13.4"
+  }
+}
