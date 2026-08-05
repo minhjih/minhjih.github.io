@@ -191,8 +191,23 @@ async function changeKeys() {
   }
 }
 
+async function setMailWebhook() {
+  const url = prompt(
+    "입금확인 시 이메일 발송용 Apps Script 웹앱 URL(/exec)을 붙여넣으세요.\n(비우고 확인하면 이메일 알림 끔)",
+    ""
+  );
+  if (url === null) return;
+  try {
+    await desk("set_keys", { new_mail_webhook: url.trim() });
+    toast(url.trim() ? "이메일 알림이 설정되었습니다" : "이메일 알림을 껐습니다");
+  } catch (e) {
+    toast("설정 실패: " + e.message);
+  }
+}
+
 // ---------- 이벤트 ----------
 $("#enterBtn").onclick = enter;
+$("#mailBtn").onclick = setMailWebhook;
 $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); });
 $("#refreshBtn").onclick = load;
 $("#csvBtn").onclick = exportCsv;
