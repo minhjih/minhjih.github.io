@@ -45,7 +45,7 @@ function doPost(e) {
             '<div style="font-family:monospace;font-size:11px;color:#555;margin-top:8px;word-break:break-all;">CODE: ' + _esc(code) + '</div>' +
           '</div>' +
           '<table style="width:100%;font-size:14px;border-collapse:collapse;">' +
-            _row('공연', '잔열 · 8.29 (금) 5:30PM') +
+            _row('공연', '잔열 · 8.29 (토) 5:30PM') +
             _row('장소', '001 라이브홀 (서울 마포구 월드컵로 140 지하1층)') +
             _row('예매자', _esc(name)) +
             _row('수량 / 금액', qty + ' · ' + won) +
