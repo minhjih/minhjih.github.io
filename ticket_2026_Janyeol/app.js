@@ -18,6 +18,76 @@ const esc = (s) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
 
+const SCRIPT_LOADS = {};
+
+function loadScriptOnce(key, urls) {
+  if (SCRIPT_LOADS[key]) return SCRIPT_LOADS[key];
+  SCRIPT_LOADS[key] = new Promise((resolve, reject) => {
+    let idx = 0;
+    const next = () => {
+      const spec = urls[idx++];
+      if (!spec) {
+        reject(new Error(`${key} 로드 실패`));
+        return;
+      }
+      const src = typeof spec === "string" ? spec : spec.src;
+      const s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      if (typeof spec !== "string" && spec.integrity) {
+        s.integrity = spec.integrity;
+        s.crossOrigin = "anonymous";
+      }
+      s.onload = resolve;
+      s.onerror = next;
+      document.head.appendChild(s);
+    };
+    next();
+  });
+  return SCRIPT_LOADS[key];
+}
+
+async function ensureQRCode() {
+  if (window.QRCode) return true;
+  await loadScriptOnce("qrcode", [
+    {
+      src: "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+      integrity: "sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU",
+    },
+  ]);
+  return !!window.QRCode;
+}
+
+async function ensureHtml2Canvas() {
+  if (window.html2canvas) return true;
+  await loadScriptOnce("html2canvas", [
+    {
+      src: "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",
+      integrity: "sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H",
+    },
+  ]);
+  return !!window.html2canvas;
+}
+
+function setImageWithFallback(img, primary, fallback, onFinalError) {
+  if (!img) return;
+  const first = primary || fallback || "";
+  if (!first) {
+    onFinalError?.();
+    return;
+  }
+  let triedFallback = false;
+  img.onerror = () => {
+    if (!triedFallback && fallback && fallback !== first) {
+      triedFallback = true;
+      img.src = fallback;
+      return;
+    }
+    onFinalError?.();
+  };
+  img.src = first;
+}
+
 function toast(msg) {
   const t = $("#toast");
   t.textContent = msg;
@@ -38,19 +108,22 @@ function renderStatic() {
   // 포스터 (없으면 CSS 타이틀 히어로로 폴백)
   const pm = $("#posterMain");
   const src = (CFG.POSTER && CFG.POSTER.main) || "";
-  if (src) {
-    pm.src = src;
-    pm.onerror = () => {
+  const fallback = (CFG.POSTER && CFG.POSTER.mainFallback) || "";
+  if (src || fallback) {
+    setImageWithFallback(pm, src, fallback, () => {
       pm.closest(".poster-frame").classList.add("hidden");
       $("#titleStack").classList.remove("hidden");
-    };
+    });
   } else {
     pm.closest(".poster-frame").classList.add("hidden");
     $("#titleStack").classList.remove("hidden");
   }
   const pc = $("#posterCue");
   const csrc = (CFG.POSTER && CFG.POSTER.cue) || "";
-  if (csrc) { pc.src = csrc; pc.onerror = () => pc.closest(".poster-frame").classList.add("hidden"); }
+  const cfallback = (CFG.POSTER && CFG.POSTER.cueFallback) || "";
+  if (csrc || cfallback) {
+    setImageWithFallback(pc, csrc, cfallback, () => pc.closest(".poster-frame").classList.add("hidden"));
+  }
   else { pc.closest(".poster-frame").classList.add("hidden"); }
 
   // 큐시트
@@ -176,8 +249,9 @@ async function renderLoggedIn(user) {
   CURRENT_USER = user;
   const { data: orders, error } = await sb
     .from("tk_orders")
-    .select("*")
-    .neq("status", "cancelled")
+    .select("id,buyer_name,quantity,amount,method,status,qr_token,used_at,created_at")
+    .eq("user_id", user.id)
+    .in("status", ["pending", "confirmed", "used"])
     .order("created_at", { ascending: false });
 
   const area = $("#ticketArea");
@@ -191,7 +265,7 @@ async function renderLoggedIn(user) {
     return;
   }
 
-  let active = (orders || []).filter((o) => ["pending", "confirmed", "used"].includes(o.status));
+  let active = orders || [];
 
   if (CFG.DEV_MODE && CFG.DEV_AUTO_CONFIRM && !active.length) {
     active = [
@@ -218,15 +292,18 @@ async function renderLoggedIn(user) {
   area.innerHTML = html;
   wireUserbar();
   wireCopy(area);
+  wireTicketActions(area);
 
   if (active.length) {
     // QR 그리기
     active.forEach((o) => {
       if (o.status === "confirmed" && o.qr_token) {
-        drawQR(`qr-${o.id}`, o.qr_token);
-        // 티켓 이미지를 미리 생성 → iOS에서 버튼 탭 시 공유(사진 저장)가 제스처 안에서 즉시 동작
-        setTimeout(() => preparePass(`pass-${o.id}`), 300);
-        setTimeout(() => preparePass(`share-${o.id}`), 500);
+        drawQR(`qr-${o.id}`, o.qr_token).then((ok) => {
+          if (!ok) return;
+          // 티켓 이미지를 미리 생성 → iOS에서 버튼 탭 시 공유(사진 저장)가 제스처 안에서 즉시 동작
+          setTimeout(() => preparePass(`pass-${o.id}`), 300);
+          setTimeout(() => preparePass(`share-${o.id}`), 500);
+        });
       }
     });
     $("#addMore").onclick = () => {
@@ -289,11 +366,11 @@ function renderOrderCard(o) {
       </div>
       
       <div class="ticket-btns">
-        <button type="button" class="save-ticket-btn" onclick="saveTicketImage('pass-${o.id}', '${esc(o.buyer_name)}')">
+        <button type="button" class="save-ticket-btn" data-save-pass="${esc(`pass-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           티켓 저장
         </button>
-        <button type="button" class="share-ticket-btn" onclick="shareTicketImage('share-${o.id}', '${esc(o.buyer_name)}')">
+        <button type="button" class="share-ticket-btn" data-share-pass="${esc(`share-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
           인스타 공유
         </button>
@@ -326,6 +403,7 @@ function renderOrderCard(o) {
 // object-fit로 잘라넣지 않고, 준비된 이미지를 자연 비율(width 100%)로 그대로 → html2canvas 왜곡 없음.
 function shareCardHTML(o) {
   const poster = (CFG.POSTER && (CFG.POSTER.ticket || CFG.POSTER.main)) || "";
+  const fallback = (CFG.POSTER && (CFG.POSTER.ticketFallback || CFG.POSTER.mainFallback)) || "";
   return `
     <div style="position:fixed;left:-10000px;top:0;width:340px;pointer-events:none;" aria-hidden="true">
       <div class="tech-ticket" id="share-${o.id}">
@@ -343,7 +421,7 @@ function shareCardHTML(o) {
           <div class="tech-field"><span class="lbl">VENUE</span><span class="val">${esc(EV.venue || "001 HALL")}</span></div>
         </div>
         <div class="share-poster">
-          ${poster ? `<img class="share-poster-img" src="${esc(poster)}" alt="" crossorigin="anonymous" />` : ""}
+          ${poster || fallback ? `<img class="share-poster-img" src="${esc(poster || fallback)}" alt="" crossorigin="anonymous" onerror="this.onerror=null;this.src='${esc(fallback)}'" />` : ""}
         </div>
         <div class="tech-ticket-foot"><span>JANYEOL LIVE 2026</span><span>ADMIT ${o.quantity}</span></div>
       </div>
@@ -382,9 +460,17 @@ async function shareTicketImage(shareElementId, buyerName) {
   }
 }
 
-function drawQR(elId, text) {
+async function drawQR(elId, text) {
   const el = document.getElementById(elId);
-  if (!el || !window.QRCode) return;
+  if (!el) return false;
+  try {
+    const ready = await ensureQRCode();
+    if (!ready) throw new Error("QRCode 전역 객체 없음");
+  } catch (e) {
+    console.error("QR 라이브러리 로드 실패:", e);
+    el.innerHTML = `<div class="err">QR 생성 준비 실패</div>`;
+    return false;
+  }
   el.innerHTML = "";
   new window.QRCode(el, {
     text,
@@ -394,13 +480,37 @@ function drawQR(elId, text) {
     colorLight: "#f4f4f4",
     correctLevel: window.QRCode.CorrectLevel.H,
   });
+  return true;
 }
 
 const PASS_BLOBS = {};
 
+async function waitForRenderableAssets(el) {
+  try { await document.fonts?.ready; } catch (_) {}
+  const imgs = [...el.querySelectorAll("img")];
+  await Promise.all(
+    imgs.map((img) => {
+      if (img.complete && img.naturalWidth) return Promise.resolve();
+      if (img.decode) return img.decode().catch(() => {});
+      return new Promise((resolve) => {
+        img.onload = resolve;
+        img.onerror = resolve;
+      });
+    })
+  );
+}
+
 async function renderPassBlob(passElementId, mime) {
   const passEl = document.getElementById(passElementId);
-  if (!passEl || !window.html2canvas) return null;
+  if (!passEl) return null;
+  try {
+    const ready = await ensureHtml2Canvas();
+    if (!ready) throw new Error("html2canvas 전역 객체 없음");
+    await waitForRenderableAssets(passEl);
+  } catch (e) {
+    console.error("티켓 캡처 준비 실패:", e);
+    return null;
+  }
   const canvas = await window.html2canvas(passEl, {
     scale: 3, // 고해상도 저장
     backgroundColor: "#f4f4f4",
@@ -632,6 +742,15 @@ function wireCopy(root) {
   });
 }
 
+function wireTicketActions(root) {
+  root.querySelectorAll("[data-save-pass]").forEach((b) => {
+    b.onclick = () => saveTicketImage(b.dataset.savePass, b.dataset.buyerName || "");
+  });
+  root.querySelectorAll("[data-share-pass]").forEach((b) => {
+    b.onclick = () => shareTicketImage(b.dataset.sharePass, b.dataset.buyerName || "");
+  });
+}
+
 async function submitOrder() {
   const name = $("#fName").value.trim();
   const dep = $("#fDep").value.trim();
@@ -669,6 +788,12 @@ async function submitOrder() {
 
 // ---------------- 실시간 ----------------
 let channel = null;
+let refreshTimer = null;
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => refresh(CURRENT_USER), 150);
+}
+
 function subscribeRealtime(userId) {
   if (channel) sb.removeChannel(channel);
   channel = sb
@@ -676,7 +801,7 @@ function subscribeRealtime(userId) {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "tk_orders", filter: `user_id=eq.${userId}` },
-      () => refresh()
+      scheduleRefresh
     )
     .subscribe();
 }
@@ -688,7 +813,11 @@ const MOCK_DEV_USER = {
   user_metadata: { full_name: "테스트 사용자 (DEV)" },
 };
 
-async function refresh() {
+async function refresh(user = CURRENT_USER) {
+  if (user) {
+    await renderLoggedIn(user);
+    return;
+  }
   const { data } = await sb.auth.getUser();
   if (data?.user) {
     await renderLoggedIn(data.user);

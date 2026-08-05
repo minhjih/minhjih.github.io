@@ -42,6 +42,7 @@ if (navigator.vibrate === undefined) navigator.vibrate = () => {};
 async function desk(action, params = {}) {
   const res = await fetch(FN_URL, {
     method: "POST",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       apikey: CFG.SUPABASE_ANON_KEY,

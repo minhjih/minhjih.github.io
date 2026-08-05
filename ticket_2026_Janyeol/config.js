@@ -52,9 +52,12 @@ window.JANYEOL_CONFIG = {
 
   // ----- 포스터 이미지 (img/ 폴더에 넣기) -----
   POSTER: {
-    main: "img/poster-main.jpg", // 메인 포스터
-    cue: "img/poster-cue.jpg", // 큐시트(타임테이블) 이미지
-    ticket: "img/poster-main-ticket.png", // 인스타 공유용 티켓 이미지(그대로 공유)
+    main: "img/poster-main.webp?v=20260805-2", // 메인 포스터(WebP 우선)
+    mainFallback: "img/poster-main.jpg?v=20260805-2",
+    cue: "img/poster-cue.webp?v=20260805-2", // 큐시트(타임테이블) 이미지(WebP 우선)
+    cueFallback: "img/poster-cue.jpg?v=20260805-2",
+    ticket: "img/poster-main-ticket.webp?v=20260805-2", // 인스타 공유용 티켓 이미지(WebP 우선)
+    ticketFallback: "img/poster-main-ticket.png?v=20260805-2",
   },
 
   // ----- 큐시트(타임테이블) — 포스터가 안 떠도 보이도록 텍스트로도 표시 -----
