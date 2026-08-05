@@ -300,7 +300,7 @@ function renderOrderCard(o) {
         <div class="qr-note">입금이 확인되면 QR이 여기에 자동으로 떠요.</div>
       </div>
       ${depositReminder(o.amount)}
-      ${paymentInstructionsHTML(o.method, o.amount)}
+      ${accountBoxHTML(o.amount)}
       <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.</div>`;
   }
   return `<div class="card">
@@ -360,6 +360,19 @@ function depositReminder(amount) {
   return `<div class="notice" style="border-left-color:var(--gold);background:rgba(230,165,60,.12)">
       아직 입금 전이라면 <b>${acct}</b> 로 <b>${won(amount)}</b> 입금해 주세요.<br/>
       입금이 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.
+    </div>`;
+}
+
+// 계좌 정보만 (QR/버튼 없이) — 대기 카드에서 사용
+function accountBoxHTML(amount) {
+  const B = CFG.BANK || {};
+  const acct = (B.account || "").replace(/[^0-9]/g, "");
+  return `<div class="pay-box">
+      <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
+      <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
+        <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
+      ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
+      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
     </div>`;
 }
 
