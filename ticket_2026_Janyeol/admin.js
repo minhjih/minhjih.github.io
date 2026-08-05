@@ -26,6 +26,7 @@ function toast(m) {
 async function desk(action, params = {}) {
   const res = await fetch(FN_URL, {
     method: "POST",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       apikey: CFG.SUPABASE_ANON_KEY,
@@ -131,18 +132,18 @@ function card(o) {
   const [lbl, cls] = SLABEL[o.status] || ["", ""];
   let acts = "";
   if (o.status === "pending") {
-    acts = `<button class="btn small" data-act="confirm" data-id="${o.id}">입금확인 · QR 발급</button>
-            <button class="btn ghost small" data-act="cancel" data-id="${o.id}">취소</button>`;
+    acts = `<button class="btn small" data-act="confirm" data-id="${esc(o.id)}">입금확인 · QR 발급</button>
+            <button class="btn ghost small" data-act="cancel" data-id="${esc(o.id)}">취소</button>`;
   } else if (o.status === "confirmed") {
-    acts = `<button class="btn ghost small" data-act="reset" data-id="${o.id}">확인 취소(대기로)</button>
-            <button class="btn ghost small" data-act="cancel" data-id="${o.id}">주문 취소</button>`;
+    acts = `<button class="btn ghost small" data-act="reset" data-id="${esc(o.id)}">확인 취소(대기로)</button>
+            <button class="btn ghost small" data-act="cancel" data-id="${esc(o.id)}">주문 취소</button>`;
   } else if (o.status === "used") {
     acts = `<span class="hint">입장: ${fmt(o.used_at)} · ${esc(o.checked_by || "")}</span>
-            <button class="btn ghost small" data-act="reset" data-id="${o.id}">되돌리기</button>`;
+            <button class="btn ghost small" data-act="reset" data-id="${esc(o.id)}">되돌리기</button>`;
   }
   return `<div class="order">
       <div class="top">
-        <span class="nm">${o.status === "pending" ? `<input type="checkbox" class="ordersel" data-id="${o.id}" style="width:auto;margin:0 8px 0 0;vertical-align:-2px" />` : ""}${esc(o.depositor_name || o.buyer_name)} <span style="font-weight:600;color:var(--muted);font-size:13px">· ${o.quantity}인</span></span>
+        <span class="nm">${o.status === "pending" ? `<input type="checkbox" class="ordersel" data-id="${esc(o.id)}" style="width:auto;margin:0 8px 0 0;vertical-align:-2px" />` : ""}${esc(o.depositor_name || o.buyer_name)} <span style="font-weight:600;color:var(--muted);font-size:13px">· ${o.quantity}인</span></span>
         <span class="status-pill ${cls}">${lbl}</span>
       </div>
       <div class="meta">
@@ -228,9 +229,14 @@ async function setMailWebhook() {
     ""
   );
   if (url === null) return;
+  const trimmed = url.trim();
+  if (trimmed && !/^https:\/\/script\.google\.com\/macros\/s\/[^/\s]+\/exec(?:[?#].*)?$/.test(trimmed)) {
+    toast("Apps Script /exec URL만 설정할 수 있습니다");
+    return;
+  }
   try {
-    await desk("set_keys", { new_mail_webhook: url.trim() });
-    toast(url.trim() ? "이메일 알림이 설정되었습니다" : "이메일 알림을 껐습니다");
+    await desk("set_keys", { new_mail_webhook: trimmed });
+    toast(trimmed ? "이메일 알림이 설정되었습니다" : "이메일 알림을 껐습니다");
   } catch (e) {
     toast("설정 실패: " + e.message);
   }
