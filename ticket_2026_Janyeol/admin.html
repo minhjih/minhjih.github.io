@@ -52,6 +52,12 @@
         <button class="btn ghost small" id="mailBtn">이메일 알림</button>
         <button class="btn ghost small" id="logoutBtn">잠그기</button>
       </div>
+      <div id="bulkBar" class="hidden" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;padding:10px 12px;border:1px solid var(--line-2);border-radius:12px;background:var(--card)">
+        <label style="font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="selAll" style="width:auto;margin:0" /> 전체 선택
+        </label>
+        <button class="btn small" id="bulkBtn" disabled>선택 <span id="selCount">0</span>건 입금확인 · QR 발급</button>
+      </div>
       <div id="list"></div>
     </div>
 
