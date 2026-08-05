@@ -226,7 +226,7 @@ async function renderLoggedIn(user) {
         drawQR(`qr-${o.id}`, o.qr_token);
         // 티켓 이미지를 미리 생성 → iOS에서 버튼 탭 시 공유(사진 저장)가 제스처 안에서 즉시 동작
         setTimeout(() => preparePass(`pass-${o.id}`), 300);
-        setTimeout(() => preparePass(`share-${o.id}`), 500);
+        prepareShareImage(o.id); // 인스타 공유용 이미지(그대로) 미리 준비
       }
     });
     $("#addMore").onclick = () => {
@@ -300,8 +300,7 @@ function renderOrderCard(o) {
       </div>
 
       <div class="qr-note" style="margin-top:12px;">입장 시 위 티켓 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
-      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>
-      ${shareCardHTML(o)}`;
+      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>`;
   } else if (o.status === "used") {
     body = `<div class="center" style="padding:18px 0 6px">
         <div class="qr-meta" style="font-size:26px">입장 완료</div>
@@ -322,38 +321,35 @@ function renderOrderCard(o) {
     </div>`;
 }
 
-// 인스타 공유용 카드(오프스크린): 티켓 모양 그대로, QR 자리를 포스터 패널로 대체(QR 없음)
-function shareCardHTML(o) {
-  const poster = (CFG.POSTER && CFG.POSTER.main) || "";
-  return `
-    <div style="position:fixed;left:-10000px;top:0;width:340px;pointer-events:none;" aria-hidden="true">
-      <div class="tech-ticket" id="share-${o.id}">
-        <div class="tech-ticket-head">
-          <div>
-            <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
-            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 FRI 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
-          </div>
-          <div class="tech-ticket-badge">SECURED</div>
-        </div>
-        <div class="tech-ticket-grid">
-          <div class="tech-field"><span class="lbl">NAME</span><span class="val">${esc(o.buyer_name)}</span></div>
-          <div class="tech-field"><span class="lbl">QTY</span><span class="val">${o.quantity}인</span></div>
-          <div class="tech-field"><span class="lbl">DATE</span><span class="val">8.29 FRI</span></div>
-          <div class="tech-field"><span class="lbl">VENUE</span><span class="val">${esc(EV.venue || "001 HALL")}</span></div>
-        </div>
-        <div class="share-poster">
-          ${poster ? `<div class="share-poster-img" style="background-image:url('${esc(poster)}')"></div>` : ""}
-          <div class="share-poster-cap">
-            <div class="l1">SEE YOU THERE</div>
-            <div class="l2">#잔열 · ${esc(EV.dateLabel || "8.29 (금) 5:30PM")} · ${esc(EV.venue || "001 라이브홀")}</div>
-          </div>
-        </div>
-        <div class="tech-ticket-foot"><span>JANYEOL LIVE 2026</span><span>ADMIT ${o.quantity}</span></div>
-      </div>
-    </div>`;
+// 인스타 공유용 이미지: 미리 준비해 둔 티켓 이미지(poster.ticket)를 그대로 사용.
+// 인스타가 PNG 업로드를 막아 JPEG로 변환해 캐시(제스처 안에서 즉시 공유되도록).
+const SHARE_SRC = (CFG.POSTER && (CFG.POSTER.ticket || CFG.POSTER.main)) || "";
+
+async function posterToJpegBlob(src) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = src; });
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth || 1080;
+  canvas.height = img.naturalHeight || 1080;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff"; // JPEG는 투명 미지원 → 흰 배경
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+  return await new Promise((res) => canvas.toBlob(res, "image/jpeg", 0.95));
 }
 
-// 인스타 공유(=OS 공유 시트). QR 없는 포스터 카드라 공개해도 안전.
+async function prepareShareImage(orderId) {
+  if (!SHARE_SRC) return;
+  const key = `share-${orderId}`;
+  if (PASS_BLOBS[key]) return;
+  try {
+    const blob = await posterToJpegBlob(SHARE_SRC);
+    if (blob) PASS_BLOBS[key] = blob;
+  } catch (_) { /* 공유 시 재생성 */ }
+}
+
+// 인스타 공유(=OS 공유 시트). 준비해 둔 티켓 이미지를 그대로 내보냄(크롭/왜곡 없음).
 async function shareTicketImage(shareElementId, buyerName) {
   const fileName = `잔열티켓_${buyerName || "잔열"}.jpg`;
   try {
@@ -365,7 +361,7 @@ async function shareTicketImage(shareElementId, buyerName) {
         catch (err) { if (err && err.name === "AbortError") return; }
       }
     }
-    if (!blob) { toast("이미지 생성 중…"); blob = await renderPassBlob(shareElementId, "image/jpeg"); if (blob) PASS_BLOBS[shareElementId] = blob; }
+    if (!blob) { toast("이미지 준비 중…"); blob = await posterToJpegBlob(SHARE_SRC); if (blob) PASS_BLOBS[shareElementId] = blob; }
     if (!blob) throw new Error("이미지 변환 실패");
     const url = URL.createObjectURL(blob);
     if (!isIOS() && "download" in document.createElement("a")) {
@@ -401,7 +397,7 @@ function drawQR(elId, text) {
 
 const PASS_BLOBS = {};
 
-async function renderPassBlob(passElementId, mime) {
+async function renderPassBlob(passElementId) {
   const passEl = document.getElementById(passElementId);
   if (!passEl || !window.html2canvas) return null;
   const canvas = await window.html2canvas(passEl, {
@@ -410,18 +406,13 @@ async function renderPassBlob(passElementId, mime) {
     useCORS: true,
     logging: false,
   });
-  // 인스타는 PNG 업로드가 막혀 있어 공유 카드는 JPEG로 내보냄
-  const type = mime || "image/png";
-  return await new Promise((res) => canvas.toBlob(res, type, type === "image/jpeg" ? 0.94 : undefined));
+  return await new Promise((res) => canvas.toBlob(res, "image/png"));
 }
-
-// 공유 카드(share-*)는 JPEG, 티켓 저장(pass-*)은 PNG
-const blobMime = (id) => (id.startsWith("share-") ? "image/jpeg" : "image/png");
 
 // 티켓 이미지를 미리 만들어 둠(공유 제스처 보존용)
 async function preparePass(passElementId) {
   try {
-    const blob = await renderPassBlob(passElementId, blobMime(passElementId));
+    const blob = await renderPassBlob(passElementId);
     if (blob) PASS_BLOBS[passElementId] = blob;
   } catch (_) { /* 저장 시 재생성 */ }
 }
