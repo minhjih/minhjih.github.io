@@ -56,8 +56,8 @@ async function desk(action, params = {}) {
 }
 
 const RESULT = {
-  ok: (o) => ({ cls: "ok", big: "입장", en: "Entry Granted", who: `${esc(o.buyer_name)} · ${o.quantity}인`, sub: `${esc(o.email || "")}` }),
-  already_used: (o) => ({ cls: "used", big: "이미 사용됨", en: "Already Used", who: `${esc(o.buyer_name)} · ${o.quantity}인`, sub: `사용시각 ${fmt(o.used_at)} · ${esc(o.checked_by || "")}` }),
+  ok: (o) => ({ cls: "ok", big: o.channel === "performer" ? "공연자 입장" : "입장", en: "Entry Granted", who: `${esc(o.buyer_name)}${o.channel === "performer" ? ` · 밴드 ${esc(o.depositor_name || "")}` : ` · ${o.quantity}인`}`, sub: `${o.channel === "performer" ? "공연자 초대 · " : ""}${esc(o.email || "")}` }),
+  already_used: (o) => ({ cls: "used", big: "이미 사용됨", en: "Already Used", who: `${esc(o.buyer_name)}${o.channel === "performer" ? ` · 밴드 ${esc(o.depositor_name || "")}` : ` · ${o.quantity}인`}`, sub: `사용시각 ${fmt(o.used_at)} · ${esc(o.checked_by || "")}` }),
   pending: () => ({ cls: "used", big: "입금 미확인", en: "Not Confirmed", who: "아직 발급되지 않은 티켓", sub: "관리자 입금확인 후 입장 가능" }),
   cancelled: () => ({ cls: "bad", big: "취소된 티켓", en: "Cancelled", who: "", sub: "" }),
   invalid: () => ({ cls: "bad", big: "무효", en: "Invalid QR", who: "", sub: "우리 공연 티켓이 아닙니다" }),

@@ -272,6 +272,24 @@ select { appearance: none;
 .status-confirmed { background: rgba(74,217,145,.12); color: var(--ok); border-color: rgba(74,217,145,.3); }
 .status-used { background: rgba(124,98,90,.16); color: var(--dim); border-color: rgba(124,98,90,.3); }
 .status-cancelled { background: rgba(255,90,77,.12); color: var(--bad); border-color: rgba(255,90,77,.3); }
+.status-performer { background: rgba(255,77,28,.14); color: var(--fire); border-color: rgba(255,77,28,.36); }
+
+/* ---------- 예매자 명단(읽기 전용) 표 ---------- */
+.roster-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--card); }
+.roster-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 460px; }
+.roster-table thead th { position: sticky; top: 0; background: var(--card-2); color: var(--muted); font-family: var(--f-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.roster-table td { padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; color: var(--ink); }
+.roster-table tbody tr:last-child td { border-bottom: 0; }
+.roster-table tbody tr:nth-child(even) td { background: rgba(255,236,224,.02); }
+.roster-table .idx { color: var(--dim); font-family: var(--f-mono); font-size: 12px; width: 34px; }
+.roster-table .nm { font-weight: 700; }
+.roster-table .nm .sub { display: block; font-weight: 500; font-size: 11.5px; color: var(--dim); margin-top: 1px; }
+.roster-table .qty { text-align: center; font-family: var(--f-mono); font-weight: 700; }
+.roster-table .tm { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.roster-table .ch { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: .02em; border: 1px solid transparent; white-space: nowrap; }
+.ch-presale { background: rgba(255,236,224,.06); color: var(--muted); border-color: var(--line-2); }
+.ch-onsite { background: rgba(230,165,60,.12); color: var(--gold); border-color: rgba(230,165,60,.3); }
+.ch-performer { background: rgba(255,77,28,.14); color: var(--fire); border-color: rgba(255,77,28,.36); }
 
 /* ---------- 모던 공항 스타일 스마트 모노톤 티켓 패스 ---------- */
 .tech-ticket {
@@ -370,6 +388,17 @@ select { appearance: none;
 .card.cta { border-color: rgba(255,122,26,.5); box-shadow: 0 0 0 1px rgba(255,90,20,.22), 0 22px 64px rgba(226,54,13,.3); }
 .buy-price { font-family: var(--f-serif); font-style: italic; font-weight: 700; font-size: 36px; color: var(--cream); line-height: 1; }
 .buy-price small { font-family: var(--f-body); font-style: normal; font-weight: 700; font-size: 13px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-left: 6px; }
+/* 공연자 밴드 선택 */
+.band-sel { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.band-opt {
+  flex: 1 1 auto; min-width: 88px; padding: 12px 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--line-2); background: rgba(18,10,8,.5); color: var(--muted);
+  font-family: var(--f-mono); font-weight: 700; font-size: 14px; cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.band-opt.on { border-color: var(--fire); color: #fff; background: rgba(255,77,28,.14); box-shadow: 0 0 0 1px var(--fire) inset; }
+.band-opt:active { transform: scale(.98); }
+
 .err { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 1em; }
 .center { text-align: center; }
 .hidden { display: none !important; }

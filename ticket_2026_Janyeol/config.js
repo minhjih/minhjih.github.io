@@ -41,6 +41,13 @@ window.JANYEOL_CONFIG = {
     maxQuantity: 6, // 1주문 최대 매수
   },
 
+  // ----- 공연자(밴드) 초대 티켓 -----
+  // performer.html 에서 신청. 지불 없음(무료), admin 승인 후 입장 QR 발급.
+  // 공연 정산(매출·인원)에는 포함되지 않습니다.
+  PERFORMER: {
+    bands: ["RIZZ", "심사숙곰", "BREMEN"], // 신청 시 선택할 밴드 목록
+  },
+
   // ----- 결제 안내 -----
   // 계좌이체
   BANK: {

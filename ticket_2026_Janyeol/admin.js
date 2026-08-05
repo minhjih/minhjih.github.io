@@ -11,7 +11,9 @@ const esc = (s) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
   );
 const fmt = (t) => (t ? new Date(t).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "");
-const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : m === "kakao" ? "카카오페이" : "계좌이체");
+const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : m === "kakao" ? "카카오페이" : m === "invite" ? "공연자 초대" : "계좌이체");
+const channelLabel = (c) => (c === "onsite" ? "현매" : c === "performer" ? "공연자" : "예매");
+const channelColor = (c) => (c === "onsite" ? "var(--gold)" : c === "performer" ? "var(--fire)" : "var(--muted)");
 
 let KEY = sessionStorage.getItem("janyeol_admin_key") || "";
 let FILTER = "pending";
@@ -75,11 +77,15 @@ function renderStats(s) {
     <div class="stat"><div class="v">${s.pending || 0}</div><div class="l">확인대기</div></div>
     <div class="stat"><div class="v">${(s.confirmed || 0) + (s.used || 0)}</div><div class="l">발급/입장</div></div>
     <div class="stat"><div class="v">${won(s.revenue || 0)}</div><div class="l">확정 매출 · ${s.people || 0}인</div></div>
-    <div class="stat" style="grid-column:1/-1"><div class="v" style="font-size:17px">예매 ${s.presale_people || 0}인 · 현매 ${s.onsite_people || 0}인</div><div class="l">입장 확정 인원 구성</div></div>`;
+    <div class="stat" style="grid-column:1/-1"><div class="v" style="font-size:17px">예매 ${s.presale_people || 0}인 · 현매 ${s.onsite_people || 0}인 · <span style="color:var(--fire)">공연자 ${s.performer_people || 0}인</span></div><div class="l">입장 확정 인원 구성 · 공연자는 정산(매출) 제외${s.performer_pending ? ` · 공연자 대기 ${s.performer_pending}` : ""}</div></div>`;
 }
 
 function renderList() {
-  const list = ORDERS.filter((o) => (FILTER === "all" ? o.status !== "cancelled" : o.status === FILTER));
+  const list = ORDERS.filter((o) => {
+    if (FILTER === "performer") return o.channel === "performer" && o.status !== "cancelled";
+    if (FILTER === "all") return o.status !== "cancelled";
+    return o.status === FILTER;
+  });
   if (!list.length) {
     $("#list").innerHTML = `<div class="card center hint">해당 항목이 없습니다.</div>`;
     return;
@@ -141,14 +147,22 @@ function card(o) {
     acts = `<span class="hint">입장: ${fmt(o.used_at)} · ${esc(o.checked_by || "")}</span>
             <button class="btn ghost small" data-act="reset" data-id="${esc(o.id)}">되돌리기</button>`;
   }
+  const isPerf = o.channel === "performer";
+  const headline = isPerf ? o.buyer_name : (o.depositor_name || o.buyer_name);
+  const line2 = isPerf
+    ? `<span style="font-weight:700;color:var(--fire)">공연자</span> · 밴드 <b>${esc(o.depositor_name || "-")}</b> · <b style="color:var(--muted)">무료(정산 제외)</b> · ${fmt(o.created_at)}`
+    : `<span style="font-weight:700;color:${channelColor(o.channel)}">${channelLabel(o.channel)}</span> · <b style="color:var(--gold)">${won(o.amount)}</b> · ${methodLabel(o.method)} · ${fmt(o.created_at)}`;
+  const line1 = isPerf
+    ? `밴드 ${esc(o.depositor_name || "-")}`
+    : `받는분 ${esc(o.buyer_name)}${o.phone ? " · " + esc(o.phone) : ""}`;
   return `<div class="order">
       <div class="top">
-        <span class="nm">${o.status === "pending" ? `<input type="checkbox" class="ordersel" data-id="${esc(o.id)}" style="width:auto;margin:0 8px 0 0;vertical-align:-2px" />` : ""}${esc(o.depositor_name || o.buyer_name)} <span style="font-weight:600;color:var(--muted);font-size:13px">· ${o.quantity}인</span></span>
+        <span class="nm">${o.status === "pending" ? `<input type="checkbox" class="ordersel" data-id="${esc(o.id)}" style="width:auto;margin:0 8px 0 0;vertical-align:-2px" />` : ""}${esc(headline)}${isPerf ? ` <span class="status-pill status-performer" style="font-size:10px;vertical-align:1px">공연자</span>` : ""} <span style="font-weight:600;color:var(--muted);font-size:13px">· ${o.quantity}인</span></span>
         <span class="status-pill ${cls}">${lbl}</span>
       </div>
       <div class="meta">
-        받는분 ${esc(o.buyer_name)}${o.phone ? " · " + esc(o.phone) : ""}<br/>
-        <span style="font-weight:700;color:${o.channel === "onsite" ? "var(--gold)" : "var(--muted)"}">${o.channel === "onsite" ? "현매" : "예매"}</span> · <b style="color:var(--gold)">${won(o.amount)}</b> · ${methodLabel(o.method)} · ${fmt(o.created_at)}<br/>
+        ${line1}<br/>
+        ${line2}<br/>
         <span style="color:var(--dim);font-size:12px">${esc(o.email || "")}</span>
       </div>
       <div class="acts">${acts}</div>
@@ -187,7 +201,8 @@ function exportCsv() {
   const rows = [cols.map((c) => c[1]).join(",")];
   ORDERS.forEach((o) => {
     rows.push(cols.map(([k]) => {
-      if (k === "channel") return cell(o.channel === "onsite" ? "현매" : "예매");
+      if (k === "channel") return cell(channelLabel(o.channel));
+      if (k === "depositor_name") return cell(o.channel === "performer" ? `밴드:${o.depositor_name || ""}` : o.depositor_name);
       if (k === "status") return cell(STL[o.status] || o.status);
       if (k === "method") return cell(methodLabel(o.method));
       if (["paid_at", "created_at", "confirmed_at", "used_at"].includes(k)) return cell(fmt(o[k]));
@@ -223,6 +238,17 @@ async function changeKeys() {
   }
 }
 
+async function setViewKey() {
+  const nv = prompt("‘명단 보기’(읽기 전용) 비밀번호를 입력하세요.\n(비우고 확인하면 명단 보기 기능 끔)", "");
+  if (nv === null) return;
+  try {
+    await desk("set_keys", { new_view_key: nv.trim() });
+    toast(nv.trim() ? "명단 보기 비밀번호가 설정되었습니다" : "명단 보기를 껐습니다");
+  } catch (e) {
+    toast("설정 실패: " + e.message);
+  }
+}
+
 async function setMailWebhook() {
   const url = prompt(
     "입금확인 시 이메일 발송용 Apps Script 웹앱 URL(/exec)을 붙여넣으세요.\n(비우고 확인하면 이메일 알림 끔)",
@@ -250,6 +276,7 @@ $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); })
 $("#refreshBtn").onclick = load;
 $("#csvBtn").onclick = exportCsv;
 $("#keyBtn").onclick = changeKeys;
+$("#viewKeyBtn").onclick = setViewKey;
 $("#logoutBtn").onclick = () => { sessionStorage.removeItem("janyeol_admin_key"); location.reload(); };
 $("#tabs").querySelectorAll("button").forEach((b) => {
   b.onclick = () => {
