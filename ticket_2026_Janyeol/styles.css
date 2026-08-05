@@ -272,6 +272,7 @@ select { appearance: none;
 .status-confirmed { background: rgba(74,217,145,.12); color: var(--ok); border-color: rgba(74,217,145,.3); }
 .status-used { background: rgba(124,98,90,.16); color: var(--dim); border-color: rgba(124,98,90,.3); }
 .status-cancelled { background: rgba(255,90,77,.12); color: var(--bad); border-color: rgba(255,90,77,.3); }
+.status-performer { background: rgba(255,77,28,.14); color: var(--fire); border-color: rgba(255,77,28,.36); }
 
 /* ---------- 모던 공항 스타일 스마트 모노톤 티켓 패스 ---------- */
 .tech-ticket {
@@ -370,6 +371,17 @@ select { appearance: none;
 .card.cta { border-color: rgba(255,122,26,.5); box-shadow: 0 0 0 1px rgba(255,90,20,.22), 0 22px 64px rgba(226,54,13,.3); }
 .buy-price { font-family: var(--f-serif); font-style: italic; font-weight: 700; font-size: 36px; color: var(--cream); line-height: 1; }
 .buy-price small { font-family: var(--f-body); font-style: normal; font-weight: 700; font-size: 13px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-left: 6px; }
+/* 공연자 밴드 선택 */
+.band-sel { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.band-opt {
+  flex: 1 1 auto; min-width: 88px; padding: 12px 10px; border-radius: var(--r-sm);
+  border: 1px solid var(--line-2); background: rgba(18,10,8,.5); color: var(--muted);
+  font-family: var(--f-mono); font-weight: 700; font-size: 14px; cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.band-opt.on { border-color: var(--fire); color: #fff; background: rgba(255,77,28,.14); box-shadow: 0 0 0 1px var(--fire) inset; }
+.band-opt:active { transform: scale(.98); }
+
 .err { color: var(--bad); font-size: 13px; margin-top: 10px; min-height: 1em; }
 .center { text-align: center; }
 .hidden { display: none !important; }
