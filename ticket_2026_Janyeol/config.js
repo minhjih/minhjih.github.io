@@ -18,9 +18,9 @@ window.JANYEOL_CONFIG = {
   // 관리자/확인자 백엔드 (엣지 함수 이름) — 비밀번호는 Supabase DB(tk_config)에만 저장
   DESK_FUNCTION: "janyeol-desk",
 
-  // Apple Wallet 패스 발급 API. Vercel 배포와 공식 배지 파일 준비 후에만 enabled를 켜세요.
+  // Apple Wallet 패스 발급 API
   APPLE_WALLET: {
-    enabled: false,
+    enabled: true,
     endpoint: "https://janyeol-wallet.vercel.app/api/janyeol-wallet",
     badgeImage: "img/add-to-apple-wallet-ko.svg?v=20260805-3",
   },

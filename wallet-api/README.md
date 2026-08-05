@@ -17,6 +17,7 @@ Pass Type ID와 인증서 생성은 [Apple 공식 가이드](https://developer.a
 
 현재 운영 배포는 Pass Type ID `pass.io.github.minhjih.janyeol2026`, Team ID `AN9C542482`를 사용합니다.
 Pass Type ID 인증서 `6R3TW44947`의 만료일은 `2027-09-04`입니다.
+`2026-08-05`에 실제 iPhone에서 서명된 패스 설치를 확인했습니다.
 
 ## 인증서 변환
 
