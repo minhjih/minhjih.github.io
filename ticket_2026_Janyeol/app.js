@@ -7,6 +7,12 @@ const EV = CFG.EVENT || {};
 const PRICE = Number(EV.price || 0);
 const MAXQ = Number(EV.maxQuantity || 6);
 const WALLET = CFG.APPLE_WALLET || {};
+const LOCAL_DEV_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const LOCAL_DEV_PREVIEW =
+  LOCAL_DEV_HOSTS.has(window.location.hostname) &&
+  new URLSearchParams(window.location.search).has("devtest");
+const DEV_MODE = Boolean(CFG.DEV_MODE || LOCAL_DEV_PREVIEW);
+const DEV_AUTO_CONFIRM = Boolean(CFG.DEV_AUTO_CONFIRM || LOCAL_DEV_PREVIEW);
 
 const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
   auth: { detectSessionInUrl: true, persistSession: true, flowType: "pkce" },
@@ -260,7 +266,7 @@ async function renderLoggedIn(user) {
   const bar = `<div class="userbar"><span><b>${esc(name)}</b></span>
       <button class="btn ghost small" id="logoutBtn" style="width:auto;margin:0;padding:6px 12px">로그아웃</button></div>`;
 
-  if (error && !CFG.DEV_MODE) {
+  if (error && !DEV_MODE) {
     area.innerHTML = bar + `<div class="card"><div class="err">주문을 불러오지 못했습니다: ${esc(error.message)}</div></div>`;
     wireUserbar();
     return;
@@ -268,7 +274,7 @@ async function renderLoggedIn(user) {
 
   let active = orders || [];
 
-  if (CFG.DEV_MODE && CFG.DEV_AUTO_CONFIRM && !active.length) {
+  if (DEV_MODE && DEV_AUTO_CONFIRM && !active.length) {
     active = [
       {
         id: "mock-dev-ticket",
@@ -962,7 +968,7 @@ async function refresh(user = CURRENT_USER) {
   const { data } = await sb.auth.getUser();
   if (data?.user) {
     await renderLoggedIn(data.user);
-  } else if (CFG.DEV_MODE) {
+  } else if (DEV_MODE) {
     await renderLoggedIn(MOCK_DEV_USER);
   } else {
     renderLoggedOut();
@@ -976,7 +982,7 @@ async function boot() {
     await sb.realtime.setAuth(data.session.access_token);
     subscribeRealtime(data.session.user.id);
     await renderLoggedIn(data.session.user);
-  } else if (CFG.DEV_MODE) {
+  } else if (DEV_MODE) {
     await renderLoggedIn(MOCK_DEV_USER);
   } else {
     renderLoggedOut();
@@ -987,7 +993,7 @@ async function boot() {
       await sb.realtime.setAuth(session.access_token);
       subscribeRealtime(session.user.id);
       await renderLoggedIn(session.user);
-    } else if (CFG.DEV_MODE) {
+    } else if (DEV_MODE) {
       await renderLoggedIn(MOCK_DEV_USER);
     } else {
       renderLoggedOut();
