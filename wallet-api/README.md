@@ -18,8 +18,18 @@ Pass Type ID와 인증서 생성은 [Apple 공식 가이드](https://developer.a
 현재 운영 배포는 Pass Type ID `pass.io.github.minhjih.janyeol2026`, Team ID `AN9C542482`를 사용합니다.
 Pass Type ID 인증서 `6R3TW44947`의 만료일은 `2027-09-04`입니다.
 `2026-08-05`에 실제 iPhone에서 서명된 패스 설치를 확인했습니다.
-패스 배경은 기존 공연 포스터에서 텍스트가 없는 영역을 사용하며, `background.png`,
-`background@2x.png`, `background@3x.png`를 각각 `180x220`, `360x440`, `540x660`으로 유지합니다.
+
+패스는 Apple의 [현재 Wallet HIG](https://developer.apple.com/design/human-interface-guidelines/wallet#Designing-passes)에 맞춰
+`posterEventTicket`을 먼저 요청하고 `eventTicket`으로 폴백합니다. 지원되는 포스터 레이아웃은
+`artwork.png`를 사용하며, QR 때문에 포스터 검증이 되지 않는 환경은 기존 이벤트 필드와
+`background.png`, `thumbnail.png`를 사용합니다. 이미지의 1x/2x/3x 크기는 다음과 같습니다.
+
+- `artwork`: `358x448`, `716x896`, `1074x1344`
+- `background`: `343x503`, `686x1006`, `1029x1509`
+- `thumbnail`: `90x90`, `180x180`, `270x270`
+- `icon`: `38x38`, `76x76`, `114x114`
+
+포스터 레이아웃에 필요한 공연명, 공연장, 지역, 룸, 출연자 정보는 semantic tags로도 제공합니다.
 
 ## 인증서 변환
 

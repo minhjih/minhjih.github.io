@@ -6,11 +6,20 @@ import { GET, OPTIONS, POST } from "../api/janyeol-wallet.js";
 const ENDPOINT = "https://wallet.example/api/janyeol-wallet";
 const ORDER_ID = "6f6c888e-7d40-4bb4-bc4b-f6008964ea6e";
 
-test("pass background assets cover every Wallet display scale", async () => {
+test("pass artwork covers poster and legacy Wallet layouts at every scale", async () => {
   const expectedSizes = {
-    "background.png": [180, 220],
-    "background@2x.png": [360, 440],
-    "background@3x.png": [540, 660],
+    "icon.png": [38, 38],
+    "icon@2x.png": [76, 76],
+    "icon@3x.png": [114, 114],
+    "artwork.png": [358, 448],
+    "artwork@2x.png": [716, 896],
+    "artwork@3x.png": [1074, 1344],
+    "background.png": [343, 503],
+    "background@2x.png": [686, 1006],
+    "background@3x.png": [1029, 1509],
+    "thumbnail.png": [90, 90],
+    "thumbnail@2x.png": [180, 180],
+    "thumbnail@3x.png": [270, 270],
   };
 
   for (const [name, [width, height]] of Object.entries(expectedSizes)) {

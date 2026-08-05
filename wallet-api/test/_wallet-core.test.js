@@ -62,4 +62,18 @@ test("pass contents retain order identity and disable sharing", () => {
   assert.equal(props.sharingProhibited, true);
   assert.equal(props.eventTicket.auxiliaryFields[1].value, "2명");
   assert.equal(props.relevantDate, "2026-08-29T08:30:00.000Z");
+  assert.deepEqual(props.preferredStyleSchemes, ["posterEventTicket", "eventTicket"]);
+  assert.equal(props.eventLogoText, "잔열");
+  assert.equal(props.useAutomaticColors, true);
+  assert.deepEqual(props.semantics, {
+    eventType: "PKEventTypeLivePerformance",
+    eventName: "잔열",
+    eventStartDate: "2026-08-29T08:30:00.000Z",
+    venueName: "001 라이브홀",
+    venueRegionName: "서울",
+    venueRoom: "001 라이브홀",
+    performerNames: ["잔열"],
+    attendeeName: "테스트 예매자",
+    admissionLevel: "2명",
+  });
 });

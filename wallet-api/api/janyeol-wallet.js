@@ -23,9 +23,15 @@ const PASS_ASSET_NAMES = [
   "icon.png",
   "icon@2x.png",
   "icon@3x.png",
+  "artwork.png",
+  "artwork@2x.png",
+  "artwork@3x.png",
   "background.png",
   "background@2x.png",
   "background@3x.png",
+  "thumbnail.png",
+  "thumbnail@2x.png",
+  "thumbnail@3x.png",
 ];
 
 let assetBuffersPromise;
@@ -84,6 +90,9 @@ function passEnvironment() {
     "WALLET_EVENT_TITLE",
     "WALLET_EVENT_DATE_LABEL",
     "WALLET_EVENT_VENUE",
+    "WALLET_EVENT_REGION",
+    "WALLET_EVENT_ROOM",
+    "WALLET_EVENT_PERFORMERS",
     "WALLET_EVENT_ADDRESS",
     "WALLET_EVENT_URL",
     "WALLET_EVENT_RELEVANT_ISO",

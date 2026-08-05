@@ -96,6 +96,12 @@ export function buildPassProps(ticket, env) {
   const eventTitle = env.WALLET_EVENT_TITLE || "잔열";
   const dateLabel = env.WALLET_EVENT_DATE_LABEL || "8.29 5:30PM";
   const venue = env.WALLET_EVENT_VENUE || "001 라이브홀";
+  const venueRegion = env.WALLET_EVENT_REGION || "서울";
+  const venueRoom = env.WALLET_EVENT_ROOM || venue;
+  const performers = String(env.WALLET_EVENT_PERFORMERS || eventTitle)
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
   const address = env.WALLET_EVENT_ADDRESS || "서울 마포구 월드컵로 140 지하1층";
   const website = env.WALLET_EVENT_URL || "https://minhjih.github.io/ticket_2026_Janyeol/";
   const relevantDate = validIsoDate(env.WALLET_EVENT_RELEVANT_ISO);
@@ -109,12 +115,27 @@ export function buildPassProps(ticket, env) {
     organizationName: eventTitle,
     description: `${eventTitle} 공연 입장 티켓`,
     logoText: eventTitle,
+    eventLogoText: eventTitle,
+    preferredStyleSchemes: ["posterEventTicket", "eventTicket"],
     backgroundColor: "rgb(18, 7, 10)",
     foregroundColor: "rgb(255, 236, 224)",
     labelColor: "rgb(230, 165, 60)",
+    footerBackgroundColor: "rgb(18, 7, 10)",
+    useAutomaticColors: true,
     sharingProhibited: true,
     ...(relevantDate ? { relevantDate } : {}),
     ...(expirationDate ? { expirationDate } : {}),
+    semantics: {
+      eventType: "PKEventTypeLivePerformance",
+      eventName: eventTitle,
+      ...(relevantDate ? { eventStartDate: relevantDate } : {}),
+      venueName: venue,
+      venueRegionName: venueRegion,
+      venueRoom,
+      performerNames: performers,
+      attendeeName: ticket.buyer_name,
+      admissionLevel: `${ticket.quantity}명`,
+    },
     eventTicket: {
       headerFields: [{ key: "status", label: "STATUS", value: "CONFIRMED" }],
       primaryFields: [{ key: "event", label: "공연", value: eventTitle }],
