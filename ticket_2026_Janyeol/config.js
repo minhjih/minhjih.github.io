@@ -27,7 +27,7 @@ window.JANYEOL_CONFIG = {
   EVENT: {
     title: "잔열",
     subtitle: "殘熱",
-    dateLabel: "8.29 (금) 5:30PM",
+    dateLabel: "8.29 (토) 5:30PM",
     venue: "001 라이브홀",
     address: "서울 마포구 월드컵로 140 지하1층",
     price: 7000,

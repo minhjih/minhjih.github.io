@@ -257,7 +257,7 @@ function renderOrderCard(o) {
         <div class="tech-ticket-head">
           <div>
             <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
-            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 FRI 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
+            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 SAT 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
           </div>
           <div class="tech-ticket-badge">CONFIRMED</div>
         </div>
@@ -332,14 +332,14 @@ function shareCardHTML(o) {
         <div class="tech-ticket-head">
           <div>
             <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
-            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 FRI 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
+            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 SAT 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
           </div>
           <div class="tech-ticket-badge">SECURED</div>
         </div>
         <div class="tech-ticket-grid">
           <div class="tech-field"><span class="lbl">NAME</span><span class="val">${esc(o.buyer_name)}</span></div>
           <div class="tech-field"><span class="lbl">QTY</span><span class="val">${o.quantity}인</span></div>
-          <div class="tech-field"><span class="lbl">DATE</span><span class="val">8.29 FRI</span></div>
+          <div class="tech-field"><span class="lbl">DATE</span><span class="val">8.29 SAT</span></div>
           <div class="tech-field"><span class="lbl">VENUE</span><span class="val">${esc(EV.venue || "001 HALL")}</span></div>
         </div>
         <div class="share-poster">
@@ -358,7 +358,7 @@ async function shareTicketImage(shareElementId, buyerName) {
     if (blob && navigator.canShare) {
       const file = new File([blob], fileName, { type: "image/jpeg" });
       if (navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], text: "잔열 8.29 (금) 5:30PM · 001 라이브홀 🎫 #잔열" }); return; }
+        try { await navigator.share({ files: [file], text: "잔열 8.29 (토) 5:30PM · 001 라이브홀 🎫 #잔열" }); return; }
         catch (err) { if (err && err.name === "AbortError") return; }
       }
     }
