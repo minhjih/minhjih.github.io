@@ -54,6 +54,7 @@ window.JANYEOL_CONFIG = {
   POSTER: {
     main: "img/poster-main.jpg", // 메인 포스터
     cue: "img/poster-cue.jpg", // 큐시트(타임테이블) 이미지
+    ticket: "img/poster-main-ticket.png", // 인스타 공유용 티켓 이미지(그대로 공유)
   },
 
   // ----- 큐시트(타임테이블) — 포스터가 안 떠도 보이도록 텍스트로도 표시 -----
