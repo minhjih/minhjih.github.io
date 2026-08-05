@@ -59,5 +59,5 @@ vercel --prod
 2. `ticket_2026_Janyeol/config.js`의 `APPLE_WALLET.endpoint`에 배포된 `/api/janyeol-wallet` URL을 넣습니다.
 3. 실제 iPhone에서 패스 설치와 QR 스캔을 확인한 뒤 `APPLE_WALLET.enabled`를 `true`로 바꿉니다.
 
-`WALLET_EVENT_RELEVANT_ISO`와 `WALLET_EVENT_EXPIRATION_ISO`는 공연 날짜가 확정된 뒤 ISO 8601 형식으로 설정합니다.
-현재 페이지의 `8.29 (금)` 표기는 2026년 달력과 요일이 일치하지 않으므로 날짜를 먼저 확인해야 합니다.
+`WALLET_EVENT_RELEVANT_ISO`와 `WALLET_EVENT_EXPIRATION_ISO`는 ISO 8601 형식으로 설정합니다.
+현재 페이지 기준 공연 일시는 `2026-08-29 (토) 17:30 KST`이며, 운영 시간이 최종 확정되면 관련 시각과 만료 시각을 함께 등록합니다.
