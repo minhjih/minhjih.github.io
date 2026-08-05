@@ -342,7 +342,7 @@ function shareCardHTML(o) {
           <div class="tech-field"><span class="lbl">VENUE</span><span class="val">${esc(EV.venue || "001 HALL")}</span></div>
         </div>
         <div class="share-poster">
-          ${poster ? `<img src="${esc(poster)}" alt="" />` : ""}
+          ${poster ? `<div class="share-poster-img" style="background-image:url('${esc(poster)}')"></div>` : ""}
           <div class="share-poster-cap">
             <div class="l1">SEE YOU THERE</div>
             <div class="l2">#잔열 · ${esc(EV.dateLabel || "8.29 (금) 5:30PM")} · ${esc(EV.venue || "001 라이브홀")}</div>
@@ -355,17 +355,17 @@ function shareCardHTML(o) {
 
 // 인스타 공유(=OS 공유 시트). QR 없는 포스터 카드라 공개해도 안전.
 async function shareTicketImage(shareElementId, buyerName) {
-  const fileName = `잔열티켓_${buyerName || "잔열"}.png`;
+  const fileName = `잔열티켓_${buyerName || "잔열"}.jpg`;
   try {
     let blob = PASS_BLOBS[shareElementId];
     if (blob && navigator.canShare) {
-      const file = new File([blob], fileName, { type: "image/png" });
+      const file = new File([blob], fileName, { type: "image/jpeg" });
       if (navigator.canShare({ files: [file] })) {
         try { await navigator.share({ files: [file], text: "잔열 8.29 (금) 5:30PM · 001 라이브홀 🎫 #잔열" }); return; }
         catch (err) { if (err && err.name === "AbortError") return; }
       }
     }
-    if (!blob) { toast("이미지 생성 중…"); blob = await renderPassBlob(shareElementId); if (blob) PASS_BLOBS[shareElementId] = blob; }
+    if (!blob) { toast("이미지 생성 중…"); blob = await renderPassBlob(shareElementId, "image/jpeg"); if (blob) PASS_BLOBS[shareElementId] = blob; }
     if (!blob) throw new Error("이미지 변환 실패");
     const url = URL.createObjectURL(blob);
     if (!isIOS() && "download" in document.createElement("a")) {
@@ -401,7 +401,7 @@ function drawQR(elId, text) {
 
 const PASS_BLOBS = {};
 
-async function renderPassBlob(passElementId) {
+async function renderPassBlob(passElementId, mime) {
   const passEl = document.getElementById(passElementId);
   if (!passEl || !window.html2canvas) return null;
   const canvas = await window.html2canvas(passEl, {
@@ -410,13 +410,18 @@ async function renderPassBlob(passElementId) {
     useCORS: true,
     logging: false,
   });
-  return await new Promise((res) => canvas.toBlob(res, "image/png"));
+  // 인스타는 PNG 업로드가 막혀 있어 공유 카드는 JPEG로 내보냄
+  const type = mime || "image/png";
+  return await new Promise((res) => canvas.toBlob(res, type, type === "image/jpeg" ? 0.94 : undefined));
 }
+
+// 공유 카드(share-*)는 JPEG, 티켓 저장(pass-*)은 PNG
+const blobMime = (id) => (id.startsWith("share-") ? "image/jpeg" : "image/png");
 
 // 티켓 이미지를 미리 만들어 둠(공유 제스처 보존용)
 async function preparePass(passElementId) {
   try {
-    const blob = await renderPassBlob(passElementId);
+    const blob = await renderPassBlob(passElementId, blobMime(passElementId));
     if (blob) PASS_BLOBS[passElementId] = blob;
   } catch (_) { /* 저장 시 재생성 */ }
 }
