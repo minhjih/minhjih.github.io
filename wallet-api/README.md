@@ -15,6 +15,9 @@ Supabase 관리자 권한이나 서비스 역할 키는 사용하지 않습니�
 Pass Type ID와 인증서 생성은 [Apple 공식 가이드](https://developer.apple.com/help/account/capabilities/create-wallet-identifiers-and-certificates/)를 따릅니다.
 배지는 [Apple 지갑 배지 가이드](https://developer.apple.com/kr/wallet/add-to-apple-wallet-guidelines/)에서 약관에 동의한 뒤 내려받아야 합니다.
 
+현재 운영 배포는 Pass Type ID `pass.io.github.minhjih.janyeol2026`, Team ID `AN9C542482`를 사용합니다.
+Pass Type ID 인증서 `6R3TW44947`의 만료일은 `2027-09-04`입니다.
+
 ## 인증서 변환
 
 키체인에서 Pass Type ID 인증서와 개인키를 하나의 `pass.p12`로 내보낸 뒤 PEM으로 변환합니다.
