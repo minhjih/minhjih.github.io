@@ -44,6 +44,15 @@ Supabase 대시보드 → **Authentication → Sign In / Providers → Google**
 
 > 이미 구글 로그인이 켜져 있다면 Redirect URLs 에 위 주소만 추가하면 됩니다.
 
+#### (권장) supabase.co 화면 안 보이게 — 네이티브 구글 로그인
+
+기본 방식은 로그인 중간에 `xxxx.supabase.co` 도메인을 잠깐 거쳐서 낯설게 보일 수 있어요.
+Google Cloud의 **웹 클라이언트 ID**(`xxxxx.apps.googleusercontent.com`)를 `config.js` 의
+`GOOGLE_CLIENT_ID` 에 넣으면, **우리 사이트에서 바로 구글 계정 선택창**이 떠서 supabase.co 가 노출되지 않습니다.
+
+- 조건: Google Cloud → 해당 OAuth 클라이언트 → **승인된 자바스크립트 원본**에 `https://minhjih.github.io` 가 있어야 함(위에서 이미 설정).
+- `GOOGLE_CLIENT_ID` 를 비워두면 기존 리다이렉트 방식으로 폴백(로그인은 됨).
+
 ### 2) `config.js` 채우기
 
 `config.js` 를 열어 실제 정보로 수정 → 깃허브에 커밋/푸시:
