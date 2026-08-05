@@ -45,6 +45,24 @@ function ensureQRCode() {
   return _qrLoad;
 }
 
+let _h2cLoad = null;
+function ensureHtml2Canvas() {
+  if (window.html2canvas) return Promise.resolve(true);
+  if (!_h2cLoad) {
+    _h2cLoad = new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+      s.integrity = "sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H";
+      s.crossOrigin = "anonymous";
+      s.async = true;
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+  }
+  return _h2cLoad;
+}
+
 async function drawQR(elId, text) {
   const ok = await ensureQRCode();
   const el = document.getElementById(elId);
@@ -179,10 +197,19 @@ async function renderLoggedIn(user) {
   wireUserbar();
   wireCopy(area);
   wireWallet(area);
+  wireTicketActions(area);
 
   if (active.length) {
     active.forEach((o) => {
-      if (o.status === "confirmed" && o.qr_token) drawQR(`qr-${o.id}`, o.qr_token);
+      if (o.status === "confirmed" && o.qr_token) {
+        drawQR(`qr-${o.id}`, o.qr_token).then((ok) => {
+          if (!ok) { setPassActionPending(`pass-${o.id}`, false); return; }
+          // QR이 그려진 뒤 저장용 이미지 준비(제스처 보존)
+          void preparePass(`pass-${o.id}`);
+        });
+        // 공유 카드는 QR이 없으므로 먼저 준비
+        void preparePass(`share-${o.id}`);
+      }
     });
   } else {
     mountApplyForm();
@@ -257,12 +284,228 @@ async function addToAppleWallet(orderId, button) {
   }
 }
 
+// ---------------- 티켓 저장 / 인스타 공유 ----------------
+function wireTicketActions(root) {
+  root.querySelectorAll("[data-save-pass]").forEach((b) => {
+    b.onclick = () => saveTicketImage(b.dataset.savePass, b.dataset.buyerName || "");
+  });
+  root.querySelectorAll("[data-share-pass]").forEach((b) => {
+    b.onclick = () => shareTicketImage(b.dataset.sharePass, b.dataset.buyerName || "");
+  });
+}
+
+// 인스타 공유용 카드(오프스크린): 티켓 모양 그대로, QR 자리에 이미 크롭된 티켓 이미지(QR 없음).
+function shareCardHTML(o) {
+  const poster = (CFG.POSTER && (CFG.POSTER.ticket || CFG.POSTER.main)) || "";
+  const fallback = (CFG.POSTER && (CFG.POSTER.ticketFallback || CFG.POSTER.mainFallback)) || "";
+  return `
+    <div style="position:fixed;left:-10000px;top:0;width:340px;pointer-events:none;" aria-hidden="true">
+      <div class="tech-ticket" id="share-${o.id}">
+        <div class="tech-ticket-head">
+          <div>
+            <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
+            <div class="tech-ticket-sub">${esc(EV.dateLabel || "8.29 SAT 5:30PM")} · ${esc(EV.venue || "001 LIVE HALL")}</div>
+          </div>
+          <div class="tech-ticket-badge">PERFORMER</div>
+        </div>
+        <div class="tech-ticket-grid">
+          <div class="tech-field"><span class="lbl">NAME</span><span class="val">${esc(o.buyer_name)}</span></div>
+          <div class="tech-field"><span class="lbl">BAND</span><span class="val">${esc(o.depositor_name || "-")}</span></div>
+          <div class="tech-field"><span class="lbl">DATE</span><span class="val">8.29 SAT</span></div>
+          <div class="tech-field"><span class="lbl">VENUE</span><span class="val">${esc(EV.venue || "001 HALL")}</span></div>
+        </div>
+        <div class="share-poster">
+          ${poster || fallback ? `<img class="share-poster-img" src="${esc(poster || fallback)}" alt="" crossorigin="anonymous" onerror="this.onerror=null;this.src='${esc(fallback)}'" />` : ""}
+        </div>
+        <div class="tech-ticket-foot"><span>JANYEOL LIVE 2026</span><span>PERFORMER</span></div>
+      </div>
+    </div>`;
+}
+
+const PASS_BLOBS = {};
+const PASS_PREPARATIONS = {};
+
+async function waitForRenderableAssets(el) {
+  try { await document.fonts?.ready; } catch (_) {}
+  const imgs = [...el.querySelectorAll("img")];
+  await Promise.all(
+    imgs.map((img) => {
+      if (img.complete && img.naturalWidth) return Promise.resolve();
+      if (img.decode) return img.decode().catch(() => {});
+      return new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+    })
+  );
+}
+
+async function renderPassBlob(passElementId, mime) {
+  const passEl = document.getElementById(passElementId);
+  if (!passEl) return null;
+  try {
+    const ready = await ensureHtml2Canvas();
+    if (!ready) throw new Error("html2canvas 전역 객체 없음");
+    await waitForRenderableAssets(passEl);
+  } catch (e) {
+    console.error("티켓 캡처 준비 실패:", e);
+    return null;
+  }
+  const canvas = await window.html2canvas(passEl, {
+    scale: 3, backgroundColor: "#f4f4f4", useCORS: true, logging: false,
+  });
+  const type = mime || "image/png";
+  return await new Promise((res) => canvas.toBlob(res, type, type === "image/jpeg" ? 0.95 : undefined));
+}
+
+// 공유 카드(share-*)는 JPEG, 티켓 저장(pass-*)은 PNG
+const blobMime = (id) => (id.startsWith("share-") ? "image/jpeg" : "image/png");
+
+function setPassActionPending(passElementId, pending) {
+  const attr = passElementId.startsWith("share-") ? "data-share-pass" : "data-save-pass";
+  const button = [...document.querySelectorAll(`[${attr}]`)]
+    .find((candidate) => candidate.getAttribute(attr) === passElementId);
+  if (!button) return;
+  button.disabled = pending;
+  if (pending) button.setAttribute("aria-busy", "true");
+  else button.removeAttribute("aria-busy");
+}
+
+async function preparePass(passElementId) {
+  if (PASS_BLOBS[passElementId]) {
+    setPassActionPending(passElementId, false);
+    return PASS_BLOBS[passElementId];
+  }
+  if (!PASS_PREPARATIONS[passElementId]) {
+    setPassActionPending(passElementId, true);
+    PASS_PREPARATIONS[passElementId] = renderPassBlob(passElementId, blobMime(passElementId))
+      .then((blob) => { if (blob) PASS_BLOBS[passElementId] = blob; return blob; })
+      .catch((error) => { console.error("티켓 이미지 준비 실패:", error); return null; })
+      .finally(() => { setPassActionPending(passElementId, false); delete PASS_PREPARATIONS[passElementId]; });
+  }
+  return PASS_PREPARATIONS[passElementId];
+}
+
+const isIOS = () =>
+  /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url; link.download = fileName; link.style.display = "none";
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 6000);
+}
+
+let imagePreviewUrl = "";
+let imagePreviewLastFocus = null;
+
+function closeImagePreview() {
+  const overlay = document.getElementById("imageSaveOverlay");
+  if (!overlay) return;
+  overlay.classList.add("hidden");
+  document.body.classList.remove("image-preview-open");
+  const image = overlay.querySelector("img");
+  if (image) image.removeAttribute("src");
+  if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+  imagePreviewUrl = "";
+  imagePreviewLastFocus?.focus?.();
+  imagePreviewLastFocus = null;
+}
+
+function ensureImagePreview() {
+  let overlay = document.getElementById("imageSaveOverlay");
+  if (overlay) return overlay;
+  overlay = document.createElement("div");
+  overlay.id = "imageSaveOverlay";
+  overlay.className = "image-save-overlay hidden";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "imageSaveHint");
+  overlay.innerHTML = `
+    <div class="image-save-sheet">
+      <button type="button" class="image-save-close" aria-label="닫기">×</button>
+      <img class="image-save-preview" alt="" />
+      <p class="image-save-hint" id="imageSaveHint"></p>
+    </div>`;
+  overlay.querySelector(".image-save-close").onclick = closeImagePreview;
+  overlay.onclick = (event) => { if (event.target === overlay) closeImagePreview(); };
+  overlay.onkeydown = (event) => { if (event.key === "Escape") closeImagePreview(); };
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function showImagePreview(blob, alt, message) {
+  const overlay = ensureImagePreview();
+  if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+  imagePreviewUrl = URL.createObjectURL(blob);
+  imagePreviewLastFocus = document.activeElement;
+  const image = overlay.querySelector("img");
+  image.src = imagePreviewUrl;
+  image.alt = alt;
+  overlay.querySelector(".image-save-hint").textContent = message;
+  overlay.classList.remove("hidden");
+  document.body.classList.add("image-preview-open");
+  overlay.querySelector(".image-save-close").focus();
+}
+
+async function saveTicketImage(passElementId, buyerName) {
+  const fileName = `공연자티켓_${buyerName || "잔열"}.png`;
+  try {
+    let blob = PASS_BLOBS[passElementId];
+    if (!blob) { toast("티켓 이미지 생성 중…"); blob = await preparePass(passElementId); }
+    if (!blob) throw new Error("이미지 변환 실패");
+    if (isIOS() || !("download" in document.createElement("a"))) {
+      showImagePreview(blob, "잔열 공연자 입장 티켓", "이미지를 길게 눌러 ‘사진에 저장’을 선택하세요.");
+      return;
+    }
+    downloadBlob(blob, fileName);
+    toast("티켓 사진이 저장되었습니다!");
+  } catch (e) {
+    console.error("티켓 저장 실패:", e);
+    toast("저장 실패: 다시 시도해주세요");
+  }
+}
+
+async function shareTicketImage(shareElementId, buyerName) {
+  const fileName = `잔열공연자티켓_${buyerName || "잔열"}.jpg`;
+  try {
+    const ready = PASS_BLOBS[shareElementId];
+    if (!ready) {
+      toast("공유 이미지 준비 중…");
+      const prepared = await preparePass(shareElementId);
+      if (!prepared) throw new Error("이미지 변환 실패");
+      toast("공유 이미지가 준비됐어요. 다시 눌러주세요");
+      return;
+    }
+    if (navigator.share && navigator.canShare) {
+      const file = new File([ready], fileName, { type: "image/jpeg" });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], text: "잔열 8.29 (토) 5:30PM · 001 라이브홀 🎫 #잔열" });
+          return;
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+          console.warn("공유 시트를 열지 못해 이미지 저장으로 전환:", err);
+        }
+      }
+    }
+    if (isIOS() || !("download" in document.createElement("a"))) {
+      showImagePreview(ready, "잔열 인스타 공유 이미지", "이미지를 길게 눌러 사진에 저장한 뒤 인스타 스토리에 올려주세요.");
+    } else {
+      downloadBlob(ready, fileName);
+      toast("이미지를 저장했어요! 인스타 스토리에 올려보세요");
+    }
+  } catch (e) {
+    console.error("공유 실패:", e);
+    toast("공유 준비 실패: 다시 시도해주세요");
+  }
+}
+
 function renderPerfCard(o) {
   const [label, cls] = STATUS_LABEL[o.status] || ["", ""];
   let body = "";
   if (o.status === "confirmed") {
     body = `
-      <div class="tech-ticket">
+      <div class="tech-ticket" id="pass-${o.id}">
         <div class="tech-ticket-head">
           <div>
             <div class="tech-ticket-title">${esc(EV.title || "JANYEOL")}</div>
@@ -282,9 +525,21 @@ function renderPerfCard(o) {
         </div>
         <div class="tech-ticket-foot"><span>JANYEOL LIVE 2026</span><span>PERFORMER</span></div>
       </div>
+
+      <div class="ticket-btns">
+        <button type="button" class="save-ticket-btn" data-save-pass="${esc(`pass-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}" disabled aria-busy="true">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          티켓 저장
+        </button>
+        <button type="button" class="share-ticket-btn" data-share-pass="${esc(`share-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}" disabled aria-busy="true">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+          인스타 공유
+        </button>
+      </div>
       ${appleWalletButtonHTML(o.id)}
       <div class="qr-note" style="margin-top:12px;">입장 시 위 QR을 확인자에게 보여주세요.<br/>확인되면 QR은 자동으로 만료됩니다. (화면 밝기 최대 권장)</div>
-      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>`;
+      <div class="qr-code">코드 <code>${esc(o.qr_token)}</code> <button class="copy" data-copy="${esc(o.qr_token)}">복사</button></div>
+      ${shareCardHTML(o)}`;
   } else if (o.status === "used") {
     body = `<div class="center" style="padding:18px 0 6px">
         <div class="qr-meta" style="font-size:26px">입장 완료</div>
