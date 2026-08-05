@@ -300,11 +300,15 @@ async function renderLoggedIn(user) {
     active.forEach((o) => {
       if (o.status === "confirmed" && o.qr_token) {
         drawQR(`qr-${o.id}`, o.qr_token).then((ok) => {
-          if (!ok) return;
-          // 티켓 이미지를 미리 생성 → iOS에서 버튼 탭 시 공유(사진 저장)가 제스처 안에서 즉시 동작
-          setTimeout(() => preparePass(`pass-${o.id}`), 300);
-          setTimeout(() => preparePass(`share-${o.id}`), 500);
+          if (!ok) {
+            setPassActionPending(`pass-${o.id}`, false);
+            return;
+          }
+          // 저장용 이미지는 QR이 그려진 뒤 준비한다.
+          void preparePass(`pass-${o.id}`);
         });
+        // 공유 카드는 QR이 없으므로 먼저 준비해 공유 제스처를 보존한다.
+        void preparePass(`share-${o.id}`);
       }
     });
     $("#addMore").onclick = () => {
@@ -367,11 +371,11 @@ function renderOrderCard(o) {
       </div>
       
       <div class="ticket-btns">
-        <button type="button" class="save-ticket-btn" data-save-pass="${esc(`pass-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}">
+        <button type="button" class="save-ticket-btn" data-save-pass="${esc(`pass-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}" disabled aria-busy="true">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           티켓 저장
         </button>
-        <button type="button" class="share-ticket-btn" data-share-pass="${esc(`share-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}">
+        <button type="button" class="share-ticket-btn" data-share-pass="${esc(`share-${o.id}`)}" data-buyer-name="${esc(o.buyer_name)}" disabled aria-busy="true">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>
           인스타 공유
         </button>
@@ -443,28 +447,42 @@ function shareCardHTML(o) {
 async function shareTicketImage(shareElementId, buyerName) {
   const fileName = `잔열티켓_${buyerName || "잔열"}.jpg`;
   try {
-    let blob = PASS_BLOBS[shareElementId];
-    if (blob && navigator.canShare) {
-      const file = new File([blob], fileName, { type: "image/jpeg" });
-      if (navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], text: "잔열 8.29 (토) 5:30PM · 001 라이브홀 🎫 #잔열" }); return; }
-        catch (err) { if (err && err.name === "AbortError") return; }
-      }
-    }
-    if (!blob) { toast("이미지 준비 중…"); blob = await renderPassBlob(shareElementId, "image/jpeg"); if (blob) PASS_BLOBS[shareElementId] = blob; }
-    if (!blob) throw new Error("이미지 변환 실패");
-    const url = URL.createObjectURL(blob);
-    if (!isIOS() && "download" in document.createElement("a")) {
-      const a = document.createElement("a");
-      a.href = url; a.download = fileName;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 6000);
-      toast("이미지를 저장했어요! 인스타 스토리에 올려보세요");
+    const ready = PASS_BLOBS[shareElementId];
+    if (!ready) {
+      toast("공유 이미지 준비 중…");
+      const prepared = await preparePass(shareElementId);
+      if (!prepared) throw new Error("이미지 변환 실패");
+      toast("공유 이미지가 준비됐어요. 다시 눌러주세요");
       return;
     }
-    const w = window.open();
-    if (w) w.document.write(`<title>잔열 티켓</title><body style="margin:0;background:#0a0605;text-align:center"><img src="${url}" style="width:100%;max-width:420px"/><p style="color:#fff;font-family:-apple-system,sans-serif;padding:14px">길게 눌러 저장 후 인스타 스토리에 올려보세요</p></body>`);
-    else location.href = url;
+
+    if (navigator.share && navigator.canShare) {
+      const blob = ready;
+      const file = new File([blob], fileName, { type: "image/jpeg" });
+      if (navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            text: "잔열 8.29 (토) 5:30PM · 001 라이브홀 🎫 #잔열",
+          });
+          return;
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+          console.warn("공유 시트를 열지 못해 이미지 저장으로 전환:", err);
+        }
+      }
+    }
+
+    if (isIOS() || !("download" in document.createElement("a"))) {
+      showImagePreview(
+        ready,
+        "잔열 인스타 공유 이미지",
+        "이미지를 길게 눌러 사진에 저장한 뒤 인스타 스토리에 올려주세요."
+      );
+    } else {
+      downloadBlob(ready, fileName);
+      toast("이미지를 저장했어요! 인스타 스토리에 올려보세요");
+    }
   } catch (e) {
     console.error("공유 실패:", e);
     toast("공유 준비 실패: 다시 시도해주세요");
@@ -495,6 +513,7 @@ async function drawQR(elId, text) {
 }
 
 const PASS_BLOBS = {};
+const PASS_PREPARATIONS = {};
 
 async function waitForRenderableAssets(el) {
   try { await document.fonts?.ready; } catch (_) {}
@@ -536,65 +555,135 @@ async function renderPassBlob(passElementId, mime) {
 // 공유 카드(share-*)는 JPEG, 티켓 저장(pass-*)은 PNG
 const blobMime = (id) => (id.startsWith("share-") ? "image/jpeg" : "image/png");
 
+function setPassActionPending(passElementId, pending) {
+  const attr = passElementId.startsWith("share-") ? "data-share-pass" : "data-save-pass";
+  const button = [...document.querySelectorAll(`[${attr}]`)]
+    .find((candidate) => candidate.getAttribute(attr) === passElementId);
+  if (!button) return;
+  button.disabled = pending;
+  if (pending) button.setAttribute("aria-busy", "true");
+  else button.removeAttribute("aria-busy");
+}
+
 // 티켓 이미지를 미리 만들어 둠(공유 제스처 보존용)
 async function preparePass(passElementId) {
-  try {
-    const blob = await renderPassBlob(passElementId, blobMime(passElementId));
-    if (blob) PASS_BLOBS[passElementId] = blob;
-  } catch (_) { /* 저장 시 재생성 */ }
+  if (PASS_BLOBS[passElementId]) {
+    setPassActionPending(passElementId, false);
+    return PASS_BLOBS[passElementId];
+  }
+  if (!PASS_PREPARATIONS[passElementId]) {
+    setPassActionPending(passElementId, true);
+    PASS_PREPARATIONS[passElementId] = renderPassBlob(passElementId, blobMime(passElementId))
+      .then((blob) => {
+        if (blob) PASS_BLOBS[passElementId] = blob;
+        return blob;
+      })
+      .catch((error) => {
+        console.error("티켓 이미지 준비 실패:", error);
+        return null;
+      })
+      .finally(() => {
+        setPassActionPending(passElementId, false);
+        delete PASS_PREPARATIONS[passElementId];
+      });
+  }
+  return PASS_PREPARATIONS[passElementId];
 }
 
 const isIOS = () =>
   /iP(hone|ad|od)/.test(navigator.userAgent) ||
   (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 6000);
+}
+
+let imagePreviewUrl = "";
+let imagePreviewLastFocus = null;
+
+function closeImagePreview() {
+  const overlay = document.getElementById("imageSaveOverlay");
+  if (!overlay) return;
+  overlay.classList.add("hidden");
+  document.body.classList.remove("image-preview-open");
+  const image = overlay.querySelector("img");
+  if (image) image.removeAttribute("src");
+  if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+  imagePreviewUrl = "";
+  imagePreviewLastFocus?.focus?.();
+  imagePreviewLastFocus = null;
+}
+
+function ensureImagePreview() {
+  let overlay = document.getElementById("imageSaveOverlay");
+  if (overlay) return overlay;
+  overlay = document.createElement("div");
+  overlay.id = "imageSaveOverlay";
+  overlay.className = "image-save-overlay hidden";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "imageSaveHint");
+  overlay.innerHTML = `
+    <div class="image-save-sheet">
+      <button type="button" class="image-save-close" aria-label="닫기">×</button>
+      <img class="image-save-preview" alt="" />
+      <p class="image-save-hint" id="imageSaveHint"></p>
+    </div>`;
+  overlay.querySelector(".image-save-close").onclick = closeImagePreview;
+  overlay.onclick = (event) => {
+    if (event.target === overlay) closeImagePreview();
+  };
+  overlay.onkeydown = (event) => {
+    if (event.key === "Escape") closeImagePreview();
+  };
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function showImagePreview(blob, alt, message) {
+  const overlay = ensureImagePreview();
+  if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+  imagePreviewUrl = URL.createObjectURL(blob);
+  imagePreviewLastFocus = document.activeElement;
+  const image = overlay.querySelector("img");
+  image.src = imagePreviewUrl;
+  image.alt = alt;
+  overlay.querySelector(".image-save-hint").textContent = message;
+  overlay.classList.remove("hidden");
+  document.body.classList.add("image-preview-open");
+  overlay.querySelector(".image-save-close").focus();
+}
+
 async function saveTicketImage(passElementId, buyerName) {
   const fileName = `티켓_${buyerName || "잔열"}.png`;
   try {
-    // 1) 미리 만든 이미지가 있으면, 제스처 안에서 바로 공유(iOS '이미지 저장')
-    const ready = PASS_BLOBS[passElementId];
-    if (ready && navigator.canShare) {
-      const file = new File([ready], fileName, { type: "image/png" });
-      if (navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: "잔열 티켓" }); return; }
-        catch (err) { if (err && err.name === "AbortError") return; }
-      }
-    }
-
-    // 2) 준비 안 됐으면 지금 생성
-    let blob = ready;
+    let blob = PASS_BLOBS[passElementId];
     if (!blob) {
       toast("티켓 이미지 생성 중…");
-      blob = await renderPassBlob(passElementId);
-      if (blob) PASS_BLOBS[passElementId] = blob;
+      blob = await preparePass(passElementId);
     }
     if (!blob) throw new Error("이미지 변환 실패");
-    const url = URL.createObjectURL(blob);
 
-    // 3) 데스크탑/안드로이드: a[download]
-    if (!isIOS() && "download" in document.createElement("a")) {
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 6000);
-      toast("티켓 사진이 저장되었습니다!");
+    // 저장 버튼은 공유 시트를 사용하지 않는다. iOS는 사진 저장 미리보기를 제공한다.
+    if (isIOS() || !("download" in document.createElement("a"))) {
+      showImagePreview(
+        blob,
+        "잔열 입장 티켓",
+        "이미지를 길게 눌러 ‘사진에 저장’을 선택하세요."
+      );
       return;
     }
 
-    // 4) iOS 폴백: 공유가 막힌 경우 새 탭에 이미지 → 길게 눌러 저장
-    const w = window.open();
-    if (w) {
-      w.document.write(
-        `<title>잔열 티켓</title><body style="margin:0;background:#0a0605;color:#fff;font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:16px">` +
-        `<img src="${url}" alt="잔열 티켓" style="width:100%;max-width:520px;border-radius:12px"/>` +
-        `<p style="padding:14px;font-size:15px">이미지를 <b>길게 눌러</b> ‘사진에 저장’을 선택하세요.</p></body>`
-      );
-    } else {
-      location.href = url; // 팝업 차단 시
-    }
+    downloadBlob(blob, fileName);
+    toast("티켓 사진이 저장되었습니다!");
   } catch (e) {
     console.error("티켓 저장 실패:", e);
     toast("저장 실패: 다시 시도해주세요");

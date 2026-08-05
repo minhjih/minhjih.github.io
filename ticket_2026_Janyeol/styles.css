@@ -316,6 +316,36 @@ select { appearance: none;
   box-shadow: 0 4px 16px rgba(214,41,118,.35); transition: transform .1s, filter .15s;
 }
 .share-ticket-btn:active { transform: scale(.98); filter: brightness(.95); }
+.save-ticket-btn:disabled, .share-ticket-btn:disabled {
+  opacity: .58; cursor: progress; transform: none; filter: saturate(.65);
+}
+
+.image-preview-open { overflow: hidden; }
+.image-save-overlay {
+  position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  overflow-y: auto; background: rgba(4, 2, 1, .92);
+}
+.image-save-sheet {
+  position: relative; width: min(100%, 540px); padding: 48px 14px 16px;
+  border: 1px solid var(--line-2); border-radius: 8px; background: #0a0605;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .6);
+}
+.image-save-close {
+  position: absolute; top: 8px; right: 8px; width: 36px; height: 36px;
+  display: grid; place-items: center; padding: 0; border: 1px solid var(--line-2);
+  border-radius: 50%; background: rgba(255, 255, 255, .06); color: var(--ink);
+  font: 400 28px/1 var(--f-body); cursor: pointer;
+}
+.image-save-preview {
+  display: block; width: 100%; height: auto; max-height: calc(100dvh - 150px);
+  object-fit: contain; border-radius: 8px; -webkit-touch-callout: default;
+}
+.image-save-hint {
+  margin: 14px 4px 0; color: var(--ink); font-size: 14px; line-height: 1.55;
+  text-align: center;
+}
 
 .apple-wallet-action { display: flex; justify-content: center; min-height: 44px; margin-top: 12px; }
 .apple-wallet-btn { padding: 0; border: 0; background: transparent; line-height: 0; cursor: pointer; }
