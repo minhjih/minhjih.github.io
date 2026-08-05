@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/janyeol-wallet.js": {
+      "includeFiles": "api/assets/**",
+      "maxDuration": 10
+    }
+  }
+}
