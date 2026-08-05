@@ -238,6 +238,17 @@ async function changeKeys() {
   }
 }
 
+async function setViewKey() {
+  const nv = prompt("‘명단 보기’(읽기 전용) 비밀번호를 입력하세요.\n(비우고 확인하면 명단 보기 기능 끔)", "");
+  if (nv === null) return;
+  try {
+    await desk("set_keys", { new_view_key: nv.trim() });
+    toast(nv.trim() ? "명단 보기 비밀번호가 설정되었습니다" : "명단 보기를 껐습니다");
+  } catch (e) {
+    toast("설정 실패: " + e.message);
+  }
+}
+
 async function setMailWebhook() {
   const url = prompt(
     "입금확인 시 이메일 발송용 Apps Script 웹앱 URL(/exec)을 붙여넣으세요.\n(비우고 확인하면 이메일 알림 끔)",
@@ -265,6 +276,7 @@ $("#pw").addEventListener("keydown", (e) => { if (e.key === "Enter") enter(); })
 $("#refreshBtn").onclick = load;
 $("#csvBtn").onclick = exportCsv;
 $("#keyBtn").onclick = changeKeys;
+$("#viewKeyBtn").onclick = setViewKey;
 $("#logoutBtn").onclick = () => { sessionStorage.removeItem("janyeol_admin_key"); location.reload(); };
 $("#tabs").querySelectorAll("button").forEach((b) => {
   b.onclick = () => {
