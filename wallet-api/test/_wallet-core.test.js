@@ -7,7 +7,7 @@ import {
   isAllowedOrigin,
   isValidUuid,
   readDownloadToken,
-} from "./_wallet-core.js";
+} from "../api/_wallet-core.js";
 
 const SECRET = "a-secure-test-secret-that-is-longer-than-32-characters";
 const ORDER_ID = "6f6c888e-7d40-4bb4-bc4b-f6008964ea6e";

@@ -6,7 +6,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "test": "node --test api/*.test.js"
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "passkit-generator": "3.5.7"

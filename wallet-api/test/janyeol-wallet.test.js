@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { GET, OPTIONS, POST } from "./janyeol-wallet.js";
+import { GET, OPTIONS, POST } from "../api/janyeol-wallet.js";
 
 const ENDPOINT = "https://wallet.example/api/janyeol-wallet";
 const ORDER_ID = "6f6c888e-7d40-4bb4-bc4b-f6008964ea6e";
