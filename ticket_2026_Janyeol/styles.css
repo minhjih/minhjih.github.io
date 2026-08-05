@@ -37,12 +37,12 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden !important; touch-action: pan-y; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   min-height: 100vh; background: var(--bg); color: var(--ink);
   font-family: var(--f-body); line-height: 1.55; -webkit-font-smoothing: antialiased;
-  overflow-x: hidden; position: relative; letter-spacing: -0.003em;
+  position: relative; letter-spacing: -0.003em; touch-action: pan-y;
 }
 a { color: var(--gold); text-underline-offset: 3px; }
 ::selection { background: var(--fire); color: #0a0605; }
@@ -55,7 +55,7 @@ a { color: var(--gold); text-underline-offset: 3px; }
   transform: translateZ(0);
 }
 .sun {
-  position: absolute; left: 50%; top: -2vh; width: min(112vw, 680px); aspect-ratio: 1;
+  position: absolute; left: 50%; top: -2vh; width: min(100vw, 680px); aspect-ratio: 1;
   transform: translateX(-50%);
   border-radius: 47% 53% 50% 50% / 52% 48% 52% 48%;
   background: radial-gradient(circle at 50% 46%,
@@ -69,7 +69,7 @@ a { color: var(--gold); text-underline-offset: 3px; }
 }
 .sun-flare {
   position: absolute; left: 50%; top: 4vh; transform: translateX(-50%);
-  width: min(150vw, 900px); height: 78vh; z-index: -2; pointer-events: none;
+  width: min(100vw, 900px); height: 78vh; z-index: -2; pointer-events: none;
   background: radial-gradient(58% 76% at 50% 0%, rgba(255,80,20,.2), rgba(226,58,16,0) 72%);
   filter: blur(22px) url(#heat); opacity: .7;
 }
