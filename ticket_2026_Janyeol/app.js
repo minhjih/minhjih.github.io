@@ -382,8 +382,9 @@ function paymentInstructionsHTML(method, amount) {
     // 뱅킹앱 QR: 카메라 스캔 + 'QR 링크로 이동하기' 버튼 (토스 버튼 없음)
     return `<div class="pay-box">
       ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
-      <p class="hint center"><b>휴대폰 카메라로 이 QR을 스캔</b>해 송금하세요.</p>` : ""}
-      ${T.link ? `<a class="linkout-btn" href="${esc(T.link)}" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>QR 링크로 이동하기</a>` : ""}
+      <p class="hint center"><b>휴대폰 카메라로 이 송금용 QR을 스캔</b>해 송금하세요.<br/><span style="color:var(--dim)">(공연 입장용 <b style="color:var(--muted)">티켓 QR</b>은 이 QR과 달라요. 입금 확인 후 로그인 화면에 따로 떠요.)</span></p>` : ""}
+      ${T.link ? `<p class="hint center" style="margin-top:2px">혹은 아래 버튼을 눌러 <b>뱅킹앱에서 바로 송금</b>할 수 있어요.</p>
+      <a class="linkout-btn" href="${esc(T.link)}" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>QR 링크로 이동하기</a>` : ""}
       ${acctRows}
     </div>
     ${depositHint}`;
@@ -438,7 +439,7 @@ function mountBuyForm() {
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
       <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <div class="notice">위 계좌로 송금한 뒤 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있고, 확인되면 로그인 시 <b>입장 QR</b>이 자동으로 떠요.</div>
+      <div class="notice">위 계좌(또는 QR)로 송금한 뒤 <b>‘입금 완료했어요’</b> 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 로그인 화면에 공연 입장용 <b>티켓 QR</b>이 자동으로 떠요.<br/><span style="color:var(--dim)">이 티켓 QR은 방금 <b style="color:var(--muted)">송금할 때 쓴 QR과는 다른</b>, 공연 당일 입장 때 보여주는 QR이에요.</span></div>
       <div class="notice">현장 예매도 가능합니다.</div>
       <div class="err" id="formErr"></div>
     </div>`;
