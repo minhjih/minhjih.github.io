@@ -317,6 +317,10 @@ select { appearance: none;
 }
 .share-ticket-btn:active { transform: scale(.98); filter: brightness(.95); }
 
+/* 인스타 공유용 카드(오프스크린)의 포스터 패널 — QR 자리 대체. 이미 크롭된 이미지라 자연 비율로 그대로 표시 */
+.share-poster { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #d8d8d8; background: #120806; }
+.share-poster-img { display: block; width: 100%; height: auto; }
+
 .qr-wrap { text-align: center; }
 .qr-box { display: inline-block; background: #fff; padding: 16px; border-radius: 12px; margin: 12px auto 8px; box-shadow: 0 0 0 1px rgba(255,120,40,.2), 0 18px 44px rgba(226,54,13,.22); }
 .qr-box img, .qr-box canvas { display: block; }
