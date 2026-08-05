@@ -27,9 +27,14 @@
   <div class="sun-flare" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
   <svg class="svg-defs" aria-hidden="true">
-    <filter id="heat" x="-25%" y="-25%" width="150%" height="150%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.010 0.016" numOctaves="2" seed="7" result="n" />
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="30" xChannelSelector="R" yChannelSelector="G" />
+    <filter id="heat" x="-35%" y="-35%" width="170%" height="170%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.009 0.014" numOctaves="2" seed="7" result="n">
+        <animate attributeName="baseFrequency" dur="15s"
+          values="0.009 0.014;0.015 0.023;0.008 0.017;0.009 0.014" repeatCount="indefinite" />
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="n" xChannelSelector="R" yChannelSelector="G" scale="34">
+        <animate attributeName="scale" dur="9s" values="24;46;30;24" repeatCount="indefinite" />
+      </feDisplacementMap>
     </filter>
   </svg>
 

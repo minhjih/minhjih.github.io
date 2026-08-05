@@ -221,7 +221,11 @@ async function renderLoggedIn(user) {
   if (active.length) {
     // QR 그리기
     active.forEach((o) => {
-      if (o.status === "confirmed" && o.qr_token) drawQR(`qr-${o.id}`, o.qr_token);
+      if (o.status === "confirmed" && o.qr_token) {
+        drawQR(`qr-${o.id}`, o.qr_token);
+        // 티켓 이미지를 미리 생성 → iOS에서 버튼 탭 시 공유(사진 저장)가 제스처 안에서 즉시 동작
+        setTimeout(() => preparePass(`pass-${o.id}`), 300);
+      }
     });
     $("#addMore").onclick = () => {
       $("#addMore").classList.add("hidden");
@@ -300,7 +304,7 @@ function renderOrderCard(o) {
         <div class="qr-note">입금이 확인되면 QR이 여기에 자동으로 떠요.</div>
       </div>
       ${depositReminder(o.amount)}
-      ${paymentInstructionsHTML(o.method, o.amount)}
+      ${accountBoxHTML(o.amount)}
       <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.</div>`;
   }
   return `<div class="card">
@@ -323,25 +327,79 @@ function drawQR(elId, text) {
   });
 }
 
-async function saveTicketImage(passElementId, buyerName) {
+const PASS_BLOBS = {};
+
+async function renderPassBlob(passElementId) {
   const passEl = document.getElementById(passElementId);
-  if (!passEl) return;
+  if (!passEl || !window.html2canvas) return null;
+  const canvas = await window.html2canvas(passEl, {
+    scale: 3, // 고해상도 저장
+    backgroundColor: "#f4f4f4",
+    useCORS: true,
+    logging: false,
+  });
+  return await new Promise((res) => canvas.toBlob(res, "image/png"));
+}
+
+// 티켓 이미지를 미리 만들어 둠(공유 제스처 보존용)
+async function preparePass(passElementId) {
   try {
-    toast("티켓 이미지 생성 중…");
-    const canvas = await window.html2canvas(passEl, {
-      scale: 3, // 고해상도 저장
-      backgroundColor: "#f4f4f4",
-      useCORS: true,
-      logging: false,
-    });
-    const image = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = image;
-    link.download = `티켓_${buyerName || "잔열"}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast("티켓 사진이 저장되었습니다!");
+    const blob = await renderPassBlob(passElementId);
+    if (blob) PASS_BLOBS[passElementId] = blob;
+  } catch (_) { /* 저장 시 재생성 */ }
+}
+
+const isIOS = () =>
+  /iP(hone|ad|od)/.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
+async function saveTicketImage(passElementId, buyerName) {
+  const fileName = `티켓_${buyerName || "잔열"}.png`;
+  try {
+    // 1) 미리 만든 이미지가 있으면, 제스처 안에서 바로 공유(iOS '이미지 저장')
+    const ready = PASS_BLOBS[passElementId];
+    if (ready && navigator.canShare) {
+      const file = new File([ready], fileName, { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: "잔열 티켓" }); return; }
+        catch (err) { if (err && err.name === "AbortError") return; }
+      }
+    }
+
+    // 2) 준비 안 됐으면 지금 생성
+    let blob = ready;
+    if (!blob) {
+      toast("티켓 이미지 생성 중…");
+      blob = await renderPassBlob(passElementId);
+      if (blob) PASS_BLOBS[passElementId] = blob;
+    }
+    if (!blob) throw new Error("이미지 변환 실패");
+    const url = URL.createObjectURL(blob);
+
+    // 3) 데스크탑/안드로이드: a[download]
+    if (!isIOS() && "download" in document.createElement("a")) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 6000);
+      toast("티켓 사진이 저장되었습니다!");
+      return;
+    }
+
+    // 4) iOS 폴백: 공유가 막힌 경우 새 탭에 이미지 → 길게 눌러 저장
+    const w = window.open();
+    if (w) {
+      w.document.write(
+        `<title>잔열 티켓</title><body style="margin:0;background:#0a0605;color:#fff;font-family:-apple-system,system-ui,sans-serif;text-align:center;padding:16px">` +
+        `<img src="${url}" alt="잔열 티켓" style="width:100%;max-width:520px;border-radius:12px"/>` +
+        `<p style="padding:14px;font-size:15px">이미지를 <b>길게 눌러</b> ‘사진에 저장’을 선택하세요.</p></body>`
+      );
+    } else {
+      location.href = url; // 팝업 차단 시
+    }
   } catch (e) {
     console.error("티켓 저장 실패:", e);
     toast("저장 실패: 다시 시도해주세요");
@@ -360,6 +418,19 @@ function depositReminder(amount) {
   return `<div class="notice" style="border-left-color:var(--gold);background:rgba(230,165,60,.12)">
       아직 입금 전이라면 <b>${acct}</b> 로 <b>${won(amount)}</b> 입금해 주세요.<br/>
       입금이 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.
+    </div>`;
+}
+
+// 계좌 정보만 (QR/버튼 없이) — 대기 카드에서 사용
+function accountBoxHTML(amount) {
+  const B = CFG.BANK || {};
+  const acct = (B.account || "").replace(/[^0-9]/g, "");
+  return `<div class="pay-box">
+      <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
+      <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
+        <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
+      ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
+      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>
     </div>`;
 }
 
