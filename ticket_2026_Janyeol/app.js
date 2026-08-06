@@ -776,11 +776,22 @@ function mountBuyForm() {
       <label class="fld">연락처 *</label>
       <input id="fPhone" placeholder="010-0000-0000" inputmode="tel" autocomplete="tel" />
 
-      <button class="btn" id="nextBtn" style="margin-top:18px">다음 · 입금 방법 선택 →</button>
-      <div class="notice">이름과 연락처만 먼저 <b>접수</b>하면 <b>기록이 남아요.</b> 다음 화면에서 <b>입금 방법과 수량</b>을 정하고 <b>‘입금 완료했어요’</b>로 마무리하면 됩니다.</div>
+      <label class="fld">수량 *</label>
+      <div class="qty">
+        <button type="button" id="qMinus">−</button>
+        <span class="n" id="qN">1</span>
+        <button type="button" id="qPlus">+</button>
+        <span class="hint" style="margin:0 0 0 6px">최대 ${MAXQ}인</span>
+      </div>
+
+      <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
+      <button class="btn" id="nextBtn">다음 · 입금 방법 선택 →</button>
+      <div class="notice">이름·연락처·수량만 먼저 <b>접수</b>하면 <b>기록이 남아요.</b> 다음 화면에서 <b>입금 방법</b>을 정하고 <b>‘입금 완료했어요’</b>로 마무리하면 됩니다.</div>
       <div class="notice">현장 예매도 가능합니다.</div>
       <div class="err" id="formErr"></div>
     </div>`;
+  $("#qMinus").onclick = () => setQty(FORM.qty - 1);
+  $("#qPlus").onclick = () => setQty(FORM.qty + 1);
   $("#nextBtn").onclick = submitStep1;
 }
 
@@ -804,9 +815,9 @@ async function submitStep1() {
       buyer_name: name,
       phone: phone,
       depositor_name: name,
-      quantity: 1,
+      quantity: FORM.qty,
       method: "bank",
-      amount: PRICE,
+      amount: PRICE * FORM.qty,
       status: "pending",
     })
     .select("id")
@@ -820,7 +831,7 @@ async function submitStep1() {
     return;
   }
   DRAFT_ID = data.id;
-  FORM = { method: "bank", qty: 1 };
+  FORM.method = "bank"; // 수량은 STEP 1 선택값 유지
   renderBuyStep2(name);
 }
 
@@ -836,22 +847,14 @@ function renderBuyStep2(name) {
         <button type="button" data-m="qr">뱅킹앱 QR</button>
       </div>
 
-      <label class="fld">수량 *</label>
-      <div class="qty">
-        <button type="button" id="qMinus">−</button>
-        <span class="n" id="qN">1</span>
-        <button type="button" id="qPlus">+</button>
-        <span class="hint" style="margin:0 0 0 6px">최대 ${MAXQ}인</span>
-      </div>
-
       <label class="fld">입금자명 *</label>
       <input id="fDep" placeholder="입금하실 분 이름" value="${esc(name || "")}" />
 
       <label class="fld">여기로 송금해 주세요</label>
       <div id="payArea"></div>
 
-      <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
-      <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE)}</span></button>
+      <div class="total"><span class="lbl">총 금액 <span style="font-weight:400;color:var(--muted);font-size:12px">(${FORM.qty}인)</span></span><span class="amt" id="tAmt">${won(PRICE * FORM.qty)}</span></div>
+      <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE * FORM.qty)}</span></button>
       <div class="notice">위 계좌(또는 QR)로 송금한 뒤 <b>‘입금 완료했어요’</b>를 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 로그인 화면에도 공연 입장용 <b>티켓 QR</b>이 떠요. <b>📩 이메일을 확인해 주세요.</b><br/><span style="color:var(--dim)">이 티켓 QR은 <b style="color:var(--muted)">송금할 때 쓴 QR과는 다른</b>, 공연 당일 입장용 QR이에요.</span></div>
       <div class="err" id="formErr"></div>
     </div>`;
@@ -865,8 +868,6 @@ function renderBuyStep2(name) {
       updatePayArea();
     };
   });
-  $("#qMinus").onclick = () => setQty(FORM.qty - 1);
-  $("#qPlus").onclick = () => setQty(FORM.qty + 1);
   $("#submitBtn").onclick = submitStep2;
   updatePayArea();
 }
@@ -907,10 +908,10 @@ async function submitStep2() {
 
 function setQty(q) {
   FORM.qty = Math.max(1, Math.min(MAXQ, q));
-  $("#qN").textContent = FORM.qty;
   const amt = won(PRICE * FORM.qty);
-  $("#tAmt").textContent = amt;
-  $("#btnAmt").textContent = amt;
+  const n = $("#qN"); if (n) n.textContent = FORM.qty;
+  const t = $("#tAmt"); if (t) t.textContent = amt;
+  const b = $("#btnAmt"); if (b) b.textContent = amt;
   updatePayArea();
 }
 
