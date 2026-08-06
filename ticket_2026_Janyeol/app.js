@@ -256,7 +256,7 @@ async function renderLoggedIn(user) {
   CURRENT_USER = user;
   const { data: orders, error } = await sb
     .from("tk_orders")
-    .select("id,buyer_name,quantity,amount,method,status,qr_token,used_at,created_at")
+    .select("id,buyer_name,quantity,amount,method,status,qr_token,used_at,created_at,paid_at")
     .eq("user_id", user.id)
     .in("status", ["pending", "confirmed", "used"])
     .order("created_at", { ascending: false });
@@ -397,12 +397,16 @@ function renderOrderCard(o) {
         <div class="qr-note">ENTERED · ${o.used_at ? new Date(o.used_at).toLocaleString("ko-KR") : ""}</div>
       </div>`;
   } else {
-    body = `<div class="center" style="padding:6px 0 2px">
-        <div class="qr-meta" style="font-size:22px">입장 QR 대기중</div>
-        <div class="qr-note">입금이 확인되면 QR이 여기에 자동으로 떠요.</div>
+    body = `<div class="center" style="padding:10px 0 4px">
+        <div class="qr-meta" style="font-size:22px">${o.paid_at ? "입금 완료 신고 접수" : "입장 QR 대기중"}</div>
+        <div class="qr-note">${o.paid_at ? "입금 확인 후 이 화면에 <b>입장 QR</b>이 자동으로 떠요." : "입금이 확인되면 QR이 여기에 자동으로 떠요."}</div>
       </div>
-      ${depositReminder(o.amount)}
-      ${accountBoxHTML(o.amount)}
+      <div class="pay-box" style="margin-top:12px">
+        <div class="row"><span class="k">예매자</span><span class="v">${esc(o.buyer_name)}</span></div>
+        <div class="row"><span class="k">수량</span><span class="v">${o.quantity}인</span></div>
+        <div class="row"><span class="k">금액</span><span class="v" style="color:var(--gold)">${won(o.amount)}</span></div>
+      </div>
+      ${o.paid_at ? "" : accountBoxHTML(o.amount)}
       <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 이 화면에도 <b>입장 QR</b>이 자동으로 떠요. <b>📩 이메일을 확인해 주세요.</b><br/><span style="color:var(--dim)">메일을 못 받아도 이 사이트에 <b style="color:var(--muted)">로그인하면 언제든 확인</b>할 수 있어요.</span></div>`;
   }
   return `<div class="card">
@@ -699,18 +703,6 @@ async function saveTicketImage(passElementId, buyerName) {
 // ---------------- 결제 안내 ----------------
 const methodLabel = (m) => (m === "qr" ? "뱅킹앱 송금" : m === "cash" ? "현금" : "계좌이체");
 
-// 입금 전이면 어디로 얼마 보내야 하는지 명확히 (QR 발급 전까지 계속 노출)
-function depositReminder(amount) {
-  const B = CFG.BANK || {};
-  const acct = B.bank && B.account
-    ? `${esc(B.bank)} ${esc(B.account)}${B.holder ? ` (${esc(B.holder)})` : ""}`
-    : "";
-  return `<div class="notice" style="border-left-color:var(--gold);background:rgba(230,165,60,.12)">
-      아직 입금 전이라면 <b>${acct}</b> 로 <b>${won(amount)}</b> 입금해 주세요.<br/>
-      입금이 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.
-    </div>`;
-}
-
 // 계좌 정보만 (QR/버튼 없이) — 대기 카드에서 사용
 function accountBoxHTML(amount) {
   const B = CFG.BANK || {};
@@ -764,28 +756,85 @@ function paymentInstructionsHTML(method, amount) {
     ${depositHint}`;
 }
 
-// ---------------- 구매 폼 ----------------
+// ---------------- 구매 폼 (2단계) ----------------
 let FORM = { method: "bank", qty: 1 };
+let DRAFT_ID = null;        // STEP 1에서 만든 접수 레코드 id
+let WIZARD_ACTIVE = false;  // STEP 2 진행 중엔 실시간 새로고침으로 화면이 바뀌지 않게
 
+// STEP 1 · 이름 + 연락처만 입력 → '다음' 누르면 기록 먼저 생성
 function mountBuyForm() {
   FORM = { method: "bank", qty: 1 };
+  DRAFT_ID = null;
   const mount = $("#buyMount");
   const prefill = CURRENT_USER?.user_metadata?.full_name || "";
   mount.innerHTML = `
     <div class="card">
+      <div class="kicker" style="color:var(--gold);margin-bottom:6px">STEP 1 · 예매자 정보</div>
       <label class="fld">예매자 실명*</label>
       <input id="fName" placeholder="이름" value="${esc(prefill)}" autocomplete="name" />
+
       <label class="fld">연락처 *</label>
       <input id="fPhone" placeholder="010-0000-0000" inputmode="tel" autocomplete="tel" />
 
+      <button class="btn" id="nextBtn" style="margin-top:18px">다음 · 입금 방법 선택 →</button>
+      <div class="notice">이름과 연락처만 먼저 <b>접수</b>하면 <b>기록이 남아요.</b> 다음 화면에서 <b>입금 방법과 수량</b>을 정하고 <b>‘입금 완료했어요’</b>로 마무리하면 됩니다.</div>
+      <div class="notice">현장 예매도 가능합니다.</div>
+      <div class="err" id="formErr"></div>
+    </div>`;
+  $("#nextBtn").onclick = submitStep1;
+}
+
+async function submitStep1() {
+  const name = $("#fName").value.trim();
+  const phone = $("#fPhone").value.trim();
+  const err = $("#formErr");
+  err.textContent = "";
+  if (!name) return (err.textContent = "이름을 입력해주세요.");
+  if (phone.replace(/[^0-9]/g, "").length < 9) return (err.textContent = "연락처를 정확히 입력해주세요.");
+
+  const btn = $("#nextBtn");
+  btn.disabled = true;
+  btn.textContent = "접수 중…";
+  WIZARD_ACTIVE = true; // 접수 insert로 인한 실시간 새로고침 억제(STEP 2 유지)
+
+  const { data, error } = await sb
+    .from("tk_orders")
+    .insert({
+      email: CURRENT_USER.email,
+      buyer_name: name,
+      phone: phone,
+      depositor_name: name,
+      quantity: 1,
+      method: "bank",
+      amount: PRICE,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    WIZARD_ACTIVE = false;
+    btn.disabled = false;
+    btn.textContent = "다음 · 입금 방법 선택 →";
+    err.textContent = "접수 실패: " + (error?.message || "");
+    return;
+  }
+  DRAFT_ID = data.id;
+  FORM = { method: "bank", qty: 1 };
+  renderBuyStep2(name);
+}
+
+// STEP 2 · 결제 방법 + 수량 선택 → '입금 완료했어요'
+function renderBuyStep2(name) {
+  const mount = $("#buyMount");
+  mount.innerHTML = `
+    <div class="card">
+      <div class="kicker" style="color:var(--gold);margin-bottom:6px">STEP 2 · 입금</div>
       <label class="fld">결제 방법 *</label>
       <div class="seg" id="segMethod">
         <button type="button" data-m="bank" class="on">계좌번호</button>
         <button type="button" data-m="qr">뱅킹앱 QR</button>
       </div>
-
-      <label class="fld">입금자명 * <span style="font-weight:400;color:var(--dim)"></span></label>
-      <input id="fDep" placeholder="입금자 이름" value="${esc(prefill)}" />
 
       <label class="fld">수량 *</label>
       <div class="qty">
@@ -795,13 +844,15 @@ function mountBuyForm() {
         <span class="hint" style="margin:0 0 0 6px">최대 ${MAXQ}인</span>
       </div>
 
+      <label class="fld">입금자명 *</label>
+      <input id="fDep" placeholder="입금하실 분 이름" value="${esc(name || "")}" />
+
       <label class="fld">여기로 송금해 주세요</label>
       <div id="payArea"></div>
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
       <button class="btn" id="submitBtn">입금 완료했어요 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <div class="notice">위 계좌(또는 QR)로 송금한 뒤 <b>‘입금 완료했어요’</b> 버튼을 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 로그인 화면에도 공연 입장용 <b>티켓 QR</b>이 떠요. <b>📩 이메일을 확인해 주세요.</b> (메일을 못 받아도 <b>사이트에 로그인하면 언제든 확인</b> 가능)<br/><span style="color:var(--dim)">이 티켓 QR은 방금 <b style="color:var(--muted)">송금할 때 쓴 QR과는 다른</b>, 공연 당일 입장 때 보여주는 QR이에요.</span></div>
-      <div class="notice">현장 예매도 가능합니다.</div>
+      <div class="notice">위 계좌(또는 QR)로 송금한 뒤 <b>‘입금 완료했어요’</b>를 눌러주세요. 입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 로그인 화면에도 공연 입장용 <b>티켓 QR</b>이 떠요. <b>📩 이메일을 확인해 주세요.</b><br/><span style="color:var(--dim)">이 티켓 QR은 <b style="color:var(--muted)">송금할 때 쓴 QR과는 다른</b>, 공연 당일 입장용 QR이에요.</span></div>
       <div class="err" id="formErr"></div>
     </div>`;
 
@@ -816,9 +867,42 @@ function mountBuyForm() {
   });
   $("#qMinus").onclick = () => setQty(FORM.qty - 1);
   $("#qPlus").onclick = () => setQty(FORM.qty + 1);
-  $("#submitBtn").onclick = submitOrder;
+  $("#submitBtn").onclick = submitStep2;
   updatePayArea();
-  wireCopy(mount);
+}
+
+async function submitStep2() {
+  const dep = $("#fDep").value.trim();
+  const err = $("#formErr");
+  err.textContent = "";
+  if (!dep) return (err.textContent = "입금자명을 입력해주세요.");
+  if (!DRAFT_ID) { mountBuyForm(); return; }
+
+  const btn = $("#submitBtn");
+  btn.disabled = true;
+  btn.textContent = "처리 중…";
+
+  const { error } = await sb
+    .from("tk_orders")
+    .update({
+      depositor_name: dep,
+      quantity: FORM.qty,
+      method: FORM.method,
+      amount: PRICE * FORM.qty,
+      paid_at: new Date().toISOString(),
+    })
+    .eq("id", DRAFT_ID);
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = "입금 완료했어요";
+    err.textContent = "처리 실패: " + error.message;
+    return;
+  }
+  WIZARD_ACTIVE = false;
+  DRAFT_ID = null;
+  toast("입금 완료 신고를 받았어요! 확인을 기다려주세요.");
+  await refresh();
 }
 
 function setQty(q) {
@@ -831,8 +915,10 @@ function setQty(q) {
 }
 
 function updatePayArea() {
-  $("#payArea").innerHTML = paymentInstructionsHTML(FORM.method, PRICE * FORM.qty);
-  wireCopy($("#payArea"));
+  const el = $("#payArea");
+  if (!el) return;
+  el.innerHTML = paymentInstructionsHTML(FORM.method, PRICE * FORM.qty);
+  wireCopy(el);
 }
 
 function wireCopy(root) {
@@ -898,45 +984,11 @@ async function addToAppleWallet(orderId, button) {
   }
 }
 
-async function submitOrder() {
-  const name = $("#fName").value.trim();
-  const dep = $("#fDep").value.trim();
-  const phone = $("#fPhone").value.trim();
-  const err = $("#formErr");
-  err.textContent = "";
-  if (!name) return (err.textContent = "받는 분 이름을 입력해주세요.");
-  if (phone.replace(/[^0-9]/g, "").length < 9) return (err.textContent = "연락처를 정확히 입력해주세요.");
-  if (!dep) return (err.textContent = "입금자명을 입력해주세요.");
-
-  const btn = $("#submitBtn");
-  btn.disabled = true;
-  btn.textContent = "접수 중…";
-
-  const { error } = await sb.from("tk_orders").insert({
-    email: CURRENT_USER.email,
-    buyer_name: name,
-    phone: phone,
-    depositor_name: dep,
-    quantity: FORM.qty,
-    method: FORM.method,
-    amount: PRICE * FORM.qty,
-    status: "pending",
-  });
-
-  if (error) {
-    btn.disabled = false;
-    btn.textContent = "입금 완료했어요";
-    err.textContent = "접수 실패: " + error.message;
-    return;
-  }
-  toast("접수 완료! 입금 확인을 기다려주세요.");
-  await refresh();
-}
-
 // ---------------- 실시간 ----------------
 let channel = null;
 let refreshTimer = null;
 function scheduleRefresh() {
+  if (WIZARD_ACTIVE) return; // STEP 2 입력 중엔 화면 유지
   clearTimeout(refreshTimer);
   refreshTimer = setTimeout(() => refresh(CURRENT_USER), 150);
 }
