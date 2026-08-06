@@ -402,7 +402,7 @@ function renderOrderCard(o) {
         <div class="qr-meta" style="font-size:22px">여기로 입금해 주세요</div>
         <div class="qr-note">예매가 <b>접수</b>됐어요. 입금이 확인되면 이 화면에 <b>입장 QR</b>이 자동으로 떠요.</div>
       </div>
-      ${payStepHTML(o.amount)}
+      ${paymentInstructionsHTML(o.method, o.amount)}
       <div class="notice">입금 확인은 <b>수동</b>이라 <b>최대 하루</b> 정도 걸릴 수 있어요. 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드리고, 이 화면에도 <b>입장 QR</b>이 자동으로 떠요. <b>📩 이메일을 확인해 주세요.</b><br/><span style="color:var(--dim)">메일을 못 받아도 이 사이트에 <b style="color:var(--muted)">로그인하면 언제든 확인</b>할 수 있어요.</span></div>`;
   }
   return `<div class="card">
@@ -712,26 +712,44 @@ function accountBoxHTML(amount) {
     </div>`;
 }
 
-// STEP 2 입금 안내(계좌 + 송금 링크 + 토스). 뱅킹앱 QR 이미지는 넣지 않음(입장 QR과 혼동 방지).
-function payStepHTML(amount) {
+function paymentInstructionsHTML(method, amount) {
   const B = CFG.BANK || {};
   const T = CFG.TRANSFER || {};
   const acct = (B.account || "").replace(/[^0-9]/g, "");
   const tossBankCode = B.tossBankCode || "TOSS";
   const tossDeepLink = `supertoss://send?bank=${encodeURIComponent(tossBankCode)}&accountNo=${encodeURIComponent(acct)}&amount=${amount}`;
-  const linkBtn = T.link
-    ? `<a class="linkout-btn" href="${esc(T.link)}" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>뱅킹앱으로 바로 송금하기</a>`
-    : "";
+
+  const acctRows = `
+      <div class="row"><span class="k">은행</span><span class="v">${esc(B.bank || "")}</span></div>
+      <div class="row"><span class="k">계좌번호</span><span class="v">${esc(B.account || "")}
+        <button class="copy" data-copy="${esc(acct)}">복사</button></span></div>
+      ${B.holder ? `<div class="row"><span class="k">예금주</span><span class="v">${esc(B.holder)}</span></div>` : ""}
+      <div class="row"><span class="k">보낼 금액</span><span class="v" style="color:var(--gold)">${won(amount)}</span></div>`;
+  const depositHint = `<p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 QR이 발급됩니다.</p>`;
+
+  if (method === "qr") {
+    // 뱅킹앱 QR: 카메라 스캔 + 'QR 링크로 이동하기' 버튼 (토스 버튼 없음)
+    return `<div class="pay-box">
+      ${T.qrImage ? `<div class="center"><img src="${esc(T.qrImage)}" alt="송금 QR" style="max-width:230px;border-radius:12px" onerror="this.parentNode.style.display='none'"/></div>
+      <p class="hint center"><b>휴대폰 카메라로 이 송금용 QR을 스캔</b>해 송금하세요.<br/><span style="color:var(--dim)">(공연 입장용 <b style="color:var(--muted)">티켓 QR</b>은 이 QR과 달라요. 입금 확인 후 로그인 화면에 따로 떠요.)</span></p>` : ""}
+      ${T.link ? `<p class="hint center" style="margin-top:2px">혹은 아래 버튼을 눌러 <b>뱅킹앱에서 바로 송금</b>할 수 있어요.</p>
+      <a class="linkout-btn" href="${esc(T.link)}" target="_blank" rel="noopener"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>QR 링크로 이동하기</a>` : ""}
+      ${acctRows}
+    </div>
+    ${depositHint}`;
+  }
+
+  // 계좌번호: 계좌 복사가 기본, 아래에 '또는 간편하게' 구분 + 토스 버튼(분리)
   const tossBtn = acct
     ? `<button type="button" class="toss-btn" onclick="window.location.href='${tossDeepLink}'">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
         토스앱으로 간편하게 입금하기
       </button>`
     : "";
-  return `${accountBoxHTML(amount)}
-    ${linkBtn}
+  return `<div class="pay-box">${acctRows}
+    </div>
     ${tossBtn ? `<div class="pay-or">또는 간편하게</div>${tossBtn}` : ""}
-    <p class="hint">입금자명을 정확히 남겨주세요. 대조하여 확인 후 입장 QR이 발급됩니다.</p>`;
+    ${depositHint}`;
 }
 
 // ---------------- 구매 폼 ----------------
@@ -747,11 +765,17 @@ function mountBuyForm() {
       <label class="fld">예매자 실명*</label>
       <input id="fName" placeholder="이름" value="${esc(prefill)}" autocomplete="name" />
 
-      <label class="fld">입금자명 *</label>
-      <input id="fDep" placeholder="입금하실 분 이름" value="${esc(prefill)}" />
-
       <label class="fld">연락처 *</label>
       <input id="fPhone" placeholder="010-0000-0000" inputmode="tel" autocomplete="tel" />
+
+      <label class="fld">결제 방법 *</label>
+      <div class="seg" id="segMethod">
+        <button type="button" data-m="bank" class="on">계좌번호</button>
+        <button type="button" data-m="qr">뱅킹앱 QR</button>
+      </div>
+
+      <label class="fld">입금자명 *</label>
+      <input id="fDep" placeholder="입금자 이름" value="${esc(prefill)}" />
 
       <label class="fld">수량 *</label>
       <div class="qty">
@@ -763,11 +787,19 @@ function mountBuyForm() {
 
       <div class="total"><span class="lbl">총 금액</span><span class="amt" id="tAmt">${won(PRICE)}</span></div>
       <button class="btn" id="submitBtn">입금 단계로 넘어가기 · <span id="btnAmt">${won(PRICE)}</span></button>
-      <div class="notice">먼저 예매자 정보를 <b>접수</b>하면, 바로 다음 화면에서 <b>입금 계좌·송금 링크</b>를 안내해 드려요. <b>지금 접수해두면 기록이 남아</b> 혹시 입금 확인이 늦어도 안전하게 처리돼요.<br/><span style="color:var(--dim)">아직 송금하지 않아도 괜찮아요 — 접수 후 안내대로 입금하시면 됩니다.</span></div>
+      <div class="notice">먼저 예매자 정보를 <b>접수</b>하면, 다음 화면에서 <b>입금 방법(계좌·송금 QR)</b>을 안내해 드려요. <b>지금 접수해두면 기록이 남아</b> 혹시 입금 확인이 늦어도 안전하게 처리돼요.<br/><span style="color:var(--dim)">아직 송금하지 않아도 괜찮아요 — 접수 후 안내대로 입금하시면 됩니다.</span></div>
       <div class="notice">현장 예매도 가능합니다.</div>
       <div class="err" id="formErr"></div>
     </div>`;
 
+  const seg = $("#segMethod");
+  seg.querySelectorAll("button").forEach((b) => {
+    b.onclick = () => {
+      seg.querySelectorAll("button").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on");
+      FORM.method = b.dataset.m;
+    };
+  });
   $("#qMinus").onclick = () => setQty(FORM.qty - 1);
   $("#qPlus").onclick = () => setQty(FORM.qty + 1);
   $("#submitBtn").onclick = submitOrder;
