@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { Buffer } from "node:buffer";
 import { PKPass } from "passkit-generator";
 import {
+  buildBarcode,
   buildPassProps,
   createDownloadToken,
   createTicketSnapshot,
@@ -112,12 +113,7 @@ async function buildPass(ticket) {
     },
     certificateBuffers(),
   );
-  pass.setBarcodes({
-    format: "PKBarcodeFormatQR",
-    message: ticket.qr_token,
-    messageEncoding: "utf-8",
-    altText: ticket.qr_token,
-  });
+  pass.setBarcodes(buildBarcode(ticket));
   return pass.getAsBuffer();
 }
 

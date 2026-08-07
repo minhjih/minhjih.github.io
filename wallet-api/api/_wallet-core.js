@@ -71,6 +71,14 @@ export function createTicketSnapshot(order) {
   return snapshot;
 }
 
+export function buildBarcode(ticket) {
+  return {
+    format: "PKBarcodeFormatQR",
+    message: ticket.qr_token,
+    messageEncoding: "utf-8",
+  };
+}
+
 function isEligibleSnapshot(snapshot) {
   return Boolean(
     snapshot &&
@@ -118,10 +126,10 @@ export function buildPassProps(ticket, env) {
     eventLogoText: eventTitle,
     preferredStyleSchemes: ["posterEventTicket", "eventTicket"],
     backgroundColor: "rgb(18, 7, 10)",
-    foregroundColor: "rgb(255, 236, 224)",
-    labelColor: "rgb(230, 165, 60)",
+    foregroundColor: "rgb(255, 255, 255)",
+    labelColor: "rgb(255, 201, 76)",
     footerBackgroundColor: "rgb(18, 7, 10)",
-    useAutomaticColors: true,
+    useAutomaticColors: false,
     sharingProhibited: true,
     ...(relevantDate ? { relevantDate } : {}),
     ...(expirationDate ? { expirationDate } : {}),

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildBarcode,
   buildPassProps,
   createDownloadToken,
   createTicketSnapshot,
@@ -51,6 +52,15 @@ test("ticket snapshot accepts only confirmed orders with QR tokens", () => {
   assert.throws(() => createTicketSnapshot({ ...SNAPSHOT, qr_token: "" }));
 });
 
+test("barcode keeps the redemption token in the QR without visible UUID text", () => {
+  assert.deepEqual(buildBarcode(SNAPSHOT), {
+    format: "PKBarcodeFormatQR",
+    message: SNAPSHOT.qr_token,
+    messageEncoding: "utf-8",
+  });
+  assert.equal(Object.hasOwn(buildBarcode(SNAPSHOT), "altText"), false);
+});
+
 test("pass contents retain order identity and disable sharing", () => {
   const props = buildPassProps(SNAPSHOT, {
     APPLE_PASS_TYPE_ID: "pass.com.example.janyeol",
@@ -64,7 +74,9 @@ test("pass contents retain order identity and disable sharing", () => {
   assert.equal(props.relevantDate, "2026-08-29T08:30:00.000Z");
   assert.deepEqual(props.preferredStyleSchemes, ["posterEventTicket", "eventTicket"]);
   assert.equal(props.eventLogoText, "잔열");
-  assert.equal(props.useAutomaticColors, true);
+  assert.equal(props.useAutomaticColors, false);
+  assert.equal(props.foregroundColor, "rgb(255, 255, 255)");
+  assert.equal(props.labelColor, "rgb(255, 201, 76)");
   assert.deepEqual(props.semantics, {
     eventType: "PKEventTypeLivePerformance",
     eventName: "잔열",
