@@ -71,6 +71,14 @@ export function createTicketSnapshot(order) {
   return snapshot;
 }
 
+export function buildBarcode(ticket) {
+  return {
+    format: "PKBarcodeFormatQR",
+    message: ticket.qr_token,
+    messageEncoding: "utf-8",
+  };
+}
+
 function isEligibleSnapshot(snapshot) {
   return Boolean(
     snapshot &&

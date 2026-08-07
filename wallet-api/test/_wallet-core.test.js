@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildBarcode,
   buildPassProps,
   createDownloadToken,
   createTicketSnapshot,
@@ -49,6 +50,15 @@ test("ticket snapshot accepts only confirmed orders with QR tokens", () => {
   assert.deepEqual(createTicketSnapshot(SNAPSHOT), SNAPSHOT);
   assert.throws(() => createTicketSnapshot({ ...SNAPSHOT, status: "used" }));
   assert.throws(() => createTicketSnapshot({ ...SNAPSHOT, qr_token: "" }));
+});
+
+test("barcode keeps the redemption token in the QR without visible UUID text", () => {
+  assert.deepEqual(buildBarcode(SNAPSHOT), {
+    format: "PKBarcodeFormatQR",
+    message: SNAPSHOT.qr_token,
+    messageEncoding: "utf-8",
+  });
+  assert.equal(Object.hasOwn(buildBarcode(SNAPSHOT), "altText"), false);
 });
 
 test("pass contents retain order identity and disable sharing", () => {
