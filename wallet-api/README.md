@@ -22,7 +22,8 @@ Pass Type ID 인증서 `6R3TW44947`의 만료일은 `2027-09-04`입니다.
 패스는 Apple의 [현재 Wallet HIG](https://developer.apple.com/design/human-interface-guidelines/wallet#Designing-passes)에 맞춰
 `posterEventTicket`을 먼저 요청하고 `eventTicket`으로 폴백합니다. 지원되는 포스터 레이아웃은
 `artwork.png`를 사용하며, QR 때문에 포스터 검증이 되지 않는 환경은 기존 이벤트 필드와
-`background.png`, `thumbnail.png`를 사용합니다. 이미지의 1x/2x/3x 크기는 다음과 같습니다.
+`background.png`, `thumbnail.png`를 사용합니다. 썸네일용 포스터는 Wallet의 원형 마스크에서
+글자가 잘리지 않도록 배경 안쪽에 여백을 둡니다. 이미지의 1x/2x/3x 크기는 다음과 같습니다.
 
 - `artwork`: `358x448`, `716x896`, `1074x1344`
 - `background`: `343x503`, `686x1006`, `1029x1509`
