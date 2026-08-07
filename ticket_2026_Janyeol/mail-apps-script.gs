@@ -50,7 +50,9 @@ function doPost(e) {
             _row('예매자', _esc(name)) +
             _row('수량 / 금액', qty + ' · ' + won) +
           '</table>' +
-          '<a href="' + url + '" style="display:block;text-align:center;margin:18px 0 6px;padding:14px;background:#ff5a1e;color:#fff;font-weight:800;text-decoration:none;border-radius:12px;">웹에서 내 티켓 열기 →</a>' +
+          '<a href="' + url + '" style="display:block;text-align:center;margin:18px 0 8px;padding:14px;background:#ff5a1e;color:#fff;font-weight:800;text-decoration:none;border-radius:12px;">웹에서 내 티켓 열기 →</a>' +
+          '<a href="' + url + '" style="display:block;text-align:center;margin:0 0 6px;padding:13px;background:#000;color:#fff;font-weight:800;text-decoration:none;border-radius:12px;border:1px solid #333;">&nbsp; Apple 지갑에 티켓 추가하기</a>' +
+          '<p style="font-size:12px;color:#8a655c;line-height:1.6;margin:6px 0 0;text-align:center;">‘Apple 지갑에 티켓 추가하기’를 누르면 사이트로 이동해요. 사이트에서 <b>Apple 지갑에 추가</b> 버튼을 눌러 담을 수 있어요. (iPhone에서만 가능)</p>' +
           '<p style="font-size:12.5px;color:#c49a8e;line-height:1.7;margin:12px 0 0;">입장 시 이 QR(또는 웹의 티켓 QR)을 확인자에게 보여주세요. 확인되면 QR은 자동으로 만료됩니다. 화면 밝기를 최대로 해주세요.</p>' +
         '</div>' +
         '<div style="padding:14px 20px;border-top:1px solid #3a221a;font-size:11.5px;color:#8a655c;text-align:center;">잔열 · 001 라이브홀 · 문의 ' + _esc(CONTACT) + '</div>' +
