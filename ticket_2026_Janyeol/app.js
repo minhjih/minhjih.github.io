@@ -13,6 +13,7 @@ const LOCAL_DEV_PREVIEW =
   new URLSearchParams(window.location.search).has("devtest");
 const DEV_MODE = Boolean(CFG.DEV_MODE || LOCAL_DEV_PREVIEW);
 const DEV_AUTO_CONFIRM = Boolean(CFG.DEV_AUTO_CONFIRM || LOCAL_DEV_PREVIEW);
+const SALES_CLOSED = Boolean(CFG.SALES_CLOSED); // 예매 마감: 미구매자에겐 현매 안내
 
 const sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
   auth: { detectSessionInUrl: true, persistSession: true, flowType: "pkce" },
@@ -169,22 +170,32 @@ const STATUS_LABEL = {
 
 // ---------------- 렌더: 로그인 전 ----------------
 function renderLoggedOut() {
-  $("#ticketArea").innerHTML = `
-    <div class="card cta center">
-      <div class="kicker" style="text-align:center;color:var(--gold);margin-bottom:8px">Ticket · 티켓 구매</div>
-      <div class="buy-price">${won(PRICE)} <small>1인</small></div>
-      <ul class="hint" style="margin-top:14px; text-align:left; padding-left:18px; line-height:1.75; display:flex; flex-direction:column; gap:6px;">
-        <li>아래 버튼으로 <b>구글 로그인</b>하면 티켓을 예매할 수 있어요.</li>
+  const kicker = SALES_CLOSED ? "Sales Closed · 온라인 예매 마감" : "Ticket · 티켓 구매";
+  const headLine = SALES_CLOSED
+    ? `<div class="qr-meta" style="font-size:23px">온라인 예매가 마감됐어요</div>`
+    : `<div class="buy-price">${won(PRICE)} <small>1인</small></div>`;
+  const bullets = SALES_CLOSED
+    ? `<li><b>이미 예매하신 분</b>은 아래 버튼으로 <b>예매할 때 쓴 구글 계정</b>으로 로그인하면 <b>입장 QR(티켓)</b>이 바로 떠요.</li>
+        <li><b>아직 구매 안 하셨다면</b>, 온라인 예매는 마감돼 <b>공연 당일 현장에서 현매(현금)</b>로 입장해 주세요. (현장 매표 ${won(PRICE)})</li>
+        <li>당일 입장 시 이 QR을 확인자에게 보여주면 돼요.</li>`
+    : `<li>아래 버튼으로 <b>구글 로그인</b>하면 티켓을 예매할 수 있어요.</li>
         <li>입금이 확인되면 <b>예매하신 이메일로 티켓과 링크</b>를 보내드려요. <b>📩 이메일을 꼭 확인해 주세요.</b></li>
         <li>메일을 못 받아도 걱정 마세요 — <b>이 사이트에 로그인하면 언제든 내 티켓·QR을 확인</b>할 수 있어요.</li>
         <li>로그인 시 화면에도 <b>입장 QR</b>이 자동으로 떠요. 당일 이 QR을 제시하면 입장돼요.</li>
-        <li>입금 확인은 <b>수동</b>으로 진행되어, 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요.</li>
+        <li>입금 확인은 <b>수동</b>으로 진행되어, 확인까지 <b>최대 하루</b> 정도 걸릴 수 있어요.</li>`;
+  const btnLabel = SALES_CLOSED ? "구글 로그인하고 내 티켓 확인" : "구글 로그인하고 티켓 구매";
+  $("#ticketArea").innerHTML = `
+    <div class="card cta center">
+      <div class="kicker" style="text-align:center;color:var(--gold);margin-bottom:8px">${kicker}</div>
+      ${headLine}
+      <ul class="hint" style="margin-top:14px; text-align:left; padding-left:18px; line-height:1.75; display:flex; flex-direction:column; gap:6px;">
+        ${bullets}
       </ul>
       <div id="gsiWrap" class="center" style="display:flex;justify-content:center;min-height:44px;margin-top:16px"></div>
       <button class="btn google" id="loginBtn" style="display:none">
 
         <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.1 0 24 0 14.6 0 6.4 5.4 2.6 13.2l7.8 6.1C12.2 13.6 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.1 5.3-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.5z"/><path fill="#FBBC05" d="M10.4 28.3c-.5-1.4-.8-2.9-.8-4.3s.3-3 .8-4.3l-7.8-6.1C.9 16.7 0 20.2 0 24s.9 7.3 2.6 10.4l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.1-5.5c-2 1.3-4.6 2.1-7.9 2.1-6.4 0-11.8-4.1-13.7-9.8l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
-        구글 로그인하고 티켓 구매
+        ${btnLabel}
       </button>
       <div class="err" id="authErr"></div>
     </div>`;
@@ -291,10 +302,12 @@ async function renderLoggedIn(user) {
   let html = bar;
   if (active.length) {
     html += active.map(renderOrderCard).join("");
-    html += `<button class="btn ghost" id="addMore">티켓 추가 구매</button>`;
-    html += `<div id="buyMount" class="hidden"></div>`;
+    if (!SALES_CLOSED) {
+      html += `<button class="btn ghost" id="addMore">티켓 추가 구매</button>`;
+      html += `<div id="buyMount" class="hidden"></div>`;
+    }
   } else {
-    html += `<div id="buyMount"></div>`;
+    html += SALES_CLOSED ? onsiteNoticeHTML() : `<div id="buyMount"></div>`;
   }
   area.innerHTML = html;
   wireUserbar();
@@ -317,14 +330,31 @@ async function renderLoggedIn(user) {
         void preparePass(`share-${o.id}`);
       }
     });
-    $("#addMore").onclick = () => {
-      $("#addMore").classList.add("hidden");
-      $("#buyMount").classList.remove("hidden");
-      mountBuyForm();
-    };
-  } else {
+    if (!SALES_CLOSED) {
+      $("#addMore").onclick = () => {
+        $("#addMore").classList.add("hidden");
+        $("#buyMount").classList.remove("hidden");
+        mountBuyForm();
+      };
+    }
+  } else if (!SALES_CLOSED) {
     mountBuyForm();
   }
+}
+
+// 예매 마감 시 미구매자에게 보이는 현매 안내
+function onsiteNoticeHTML() {
+  return `<div class="card cta center">
+      <div class="kicker" style="text-align:center;color:var(--gold);margin-bottom:8px">Sales Closed · 온라인 예매 마감</div>
+      <div class="qr-meta" style="font-size:24px">온라인 예매가 마감됐어요</div>
+      <div class="qr-note" style="margin-top:8px">아직 티켓을 구매하지 않으셨다면 <b>공연 당일 현장에서 현매(현금)</b>로 입장하실 수 있어요.</div>
+      <div class="notice" style="text-align:left;margin-top:14px">
+        <b>${esc(EV.venue || "001 라이브홀")}</b> · ${esc(EV.dateLabel || "")}<br/>
+        ${EV.address ? esc(EV.address) + "<br/>" : ""}
+        현장 매표 <b>${won(PRICE)}</b> · <b>현금</b>을 준비해 주세요.
+      </div>
+      <div class="qr-note" style="margin-top:10px;color:var(--dim)">이미 예매하신 분은 이 화면에 티켓이 자동으로 떠요.<br/>안 보이면 <b style="color:var(--muted)">예매할 때 쓴 구글 계정</b>으로 로그인했는지 확인해 주세요.</div>
+    </div>`;
 }
 
 function wireUserbar() {
