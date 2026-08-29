@@ -10,6 +10,10 @@ window.JANYEOL_CONFIG = {
   // 개발자/테스트용 입금 확인 완료 가정 (true 설정 시 테스트 티켓 QR이 바로 표시됨)
   DEV_AUTO_CONFIRM: false,
 
+  // 예매 마감 (true 설정 시): 이미 예매한 사람은 티켓이 그대로 뜨고,
+  // 아직 안 산 사람에게는 예매 폼 대신 '현장에서 현매' 안내가 표시됩니다.
+  SALES_CLOSED: true,
+
   // ----- Supabase (데이터/인증) -----
   SUPABASE_URL: "https://gppwawgyoysctikujmed.supabase.co",
   // anon(public) 키 — 브라우저 노출 OK (RLS로 보호)
