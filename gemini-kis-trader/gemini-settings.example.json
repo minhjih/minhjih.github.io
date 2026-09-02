@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "kis-trader": {
+      "command": "/절대경로/gemini-kis-trader/.venv/bin/python",
+      "args": ["/절대경로/gemini-kis-trader/server.py"],
+      "timeout": 60000
+    }
+  }
+}

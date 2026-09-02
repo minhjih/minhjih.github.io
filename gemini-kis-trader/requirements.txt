@@ -1,0 +1,6 @@
+python-kis>=2.1.6
+typing_extensions
+mcp[cli]>=2.0
+python-dotenv
+# 글로벌 리서치용 (무거움, 선택). 빼도 국내 매매는 동작한다.
+openbb
